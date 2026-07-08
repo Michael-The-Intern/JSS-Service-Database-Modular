@@ -12,7 +12,7 @@ import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 
 function ActionQueues() {
   const ctx = React.useContext(AppContext);
-  const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
+  const { page, setPage, parts, rawParts, setRawParts, _supaWrite,
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
@@ -36,8 +36,6 @@ function ActionQueues() {
     importSavedProfiles, setImportSavedProfiles, importWorkbookBuf,
     handleUploadClick, handleFileChosen, queueTasks, setQueueTasks,
     customTasks, setCustomTasks, taskActions, setTaskActions, taskAudit, setTaskAudit,
-    queueOem, setQueueOem, queueStatus, setQueueStatus, dismissFor, setDismissFor,
-    reassignFor, setReassignFor, selectedTask, setSelectedTask,
     auditAction, setAuditAction, auditModule, setAuditModule,
     auditUser, setAuditUser, auditSearch, setAuditSearch, selectedAudit, setSelectedAudit,
     archiveAudit, setArchiveAudit, priceFilter, setPriceFilter,
