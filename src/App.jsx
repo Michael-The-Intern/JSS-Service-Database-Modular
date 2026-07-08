@@ -1594,8 +1594,6 @@ function SignIn() {
     page, setPage,
     // Derived data
     parts,
-    // onOpenDetail is an alias for setSelectedPart (used by ArchiveReview, etc)
-    onOpenDetail: setSelectedPart,
     // Auth
     authed, setAuthed, currentUser, setCurrentUser, canEdit,
     // Core data
@@ -1617,7 +1615,7 @@ function SignIn() {
     dqSelPlants, setDqSelPlants, dqSelCategories, setDqSelCategories,
     dqFlagFilter, setDqFlagFilter,
     // Selected part / detail panel
-    selectedPart, setSelectedPart, onOpenDetail,
+    selectedPart, setSelectedPart, onOpenDetail: setSelectedPart,
     sourceHistoryFor, setSourceHistoryFor,
     // Import Wizard
     importStep, setImportStep, importFile, setImportFile, importMaps, setImportMaps,
