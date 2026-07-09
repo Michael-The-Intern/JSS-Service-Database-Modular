@@ -8,6 +8,18 @@ import { StatCard } from '../shared/StatCard.jsx';
 import { Badge } from '../shared/Badge.jsx';
 import { _supa } from '../../lib/supabase.js';
 
+// ── Module-scope constants (safe, side-effect free) ────────────────
+const joysonLogoUrl = 'https://cdn.abacus.ai/images/a963436a-16b6-4c99-8408-a4501e8b703f.png';
+const EVENT_TYPES = ['Meeting', 'Deadline', 'Review', 'Training', 'Holiday', 'Other'];
+const TYPE_TONES = {
+  Meeting:  'bg-blue-50 text-blue-700 border-blue-200',
+  Deadline: 'bg-red-50 text-red-700 border-red-200',
+  Review:   'bg-amber-50 text-amber-700 border-amber-200',
+  Training: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  Holiday:  'bg-green-50 text-green-700 border-green-200',
+  Other:    'bg-gray-50 text-gray-700 border-gray-200'
+};
+
 
 function Dashboard(props) {
   const ctx = React.useContext(AppContext);
@@ -87,6 +99,8 @@ function UpcomingEvents() {
   // Add/Edit-event drawer for the team calendar.
 
 function EventModal() {
+    const ctx = React.useContext(AppContext);
+    const { eventModal, setEventModal, setTeamEvents, setCalYear, setCalMonth, setSelectedEventDate, MONTH_NAMES } = ctx;
     if (!eventModal) return null;
     const daysInModalMonth = new Date(eventModal.year, eventModal.month + 1, 0).getDate();
 
@@ -123,7 +137,7 @@ function EventModal() {
 
 function MorningActionReport() {
   const ctx = React.useContext(AppContext);
-  const { parts, marManager, setMarManager, setPage, oemKeys } = ctx;
+  const { parts, marManager, setMarManager, setPage, oemKeys, currentUser, setSelectedPart } = ctx;
     const today = 'June 9, 2026';
     const marOems = React.useMemo(function(){ return ['All'].concat(oemKeys); }, [oemKeys]);
     // OEM scope helper — every list below is filtered through this so the whole
@@ -175,4 +189,4 @@ function Section(props) {
   </div>
 </div><div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900"><span className="font-bold">How to use this:</span> Work top to bottom — red sections are time-sensitive (line-down fines, stockouts), then supply planning, then data cleanup. Click any item to jump to its detail. The AI ranks and explains; you make the final call.</div><div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><div className="space-y-4"><Section icon="🛑" title="Inactive With Demand" tone="orange" blurb="Parts marked inactive that still have future demand — do NOT archive. Reactivate or confirm service path first." items={inactiveWithDemand} line={function(p){ return 'Demand ' + p.demand + ' · ' + p.recommendation; }} onClick={function(it){ setSelectedPart(it); setPage('Master Terminal'); }} /></div><div className="space-y-4"><Section icon="⚠️" title="Duplicate Conflicts" tone="indigo" blurb="Same part number with differing OEM, plant, or price across sources. Needs human review before trusting the record." items={conflictItems} line={function(p){ return p.customerPart + ' · ' + p.dq.detail; }} onClick={function(it){ setSelectedPart(it); setPage('Data Quality Center'); }} /><Section icon="🧹" title="Placeholder / Junk IDs" tone="indigo" blurb="Rows with S / 0 / blank identifiers polluting the database. Clean up or remove." items={placeholderItems} line={function(p){ return 'Identifiers: ' + p.jss + ' / ' + p.customerPart; }} onClick={function(it){ setSelectedPart(it); setPage('Data Quality Center'); }} /><Section icon="💲" title="Price Review" tone="orange" blurb="Missing service price or thin margin vs. cost. Confirm pricing before quoting or shipping." items={priceItems} line={function(p){ return 'Price ' + p.price + ' · cost ' + p.cost; }} onClick={function(it){ setSelectedPart(it); setPage('Service Price Review'); }} /></div></div></div>;
   }
-export { Dashboard };
+export { Dashboard, UpcomingEvents, EventModal, MorningActionReport };
