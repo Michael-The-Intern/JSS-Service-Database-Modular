@@ -307,6 +307,7 @@ async function handleExport() {
 function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisions[p.id]; if (ad && (ad.status === 'Archived' || ad.status === 'ARCHIVED')) return true; if (d && (d.status === 'ARCHIVED' || d.status === 'Archived')) return true; if (d && d.archiveStatus === 'Archived') return true; if (p.archiveStatus === 'Archived' && !(d && d.archiveStatus && d.archiveStatus !== 'Archived')) return true; return false; }
 
   const [rawParts, setRawParts] = React.useState([]);
+  const [rawAudit, setRawAudit] = React.useState([]);
 
   const [selOEMs, setSelOEMs] = React.useState([]);
   const [selPriorities, setSelPriorities] = React.useState([]);
@@ -1587,6 +1588,18 @@ function SignIn() {
 
 
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+
+  // ── Supabase write helper ─────────────────────────────────────────────────
+  function _supaWrite(table, row) {
+    _supa.from(table).upsert(row).then(function(r){ if(r && r.error) console.warn('Supabase write error:', table, r.error); }, function(e){ console.warn('Supabase write error:', table, e); });
+  }
+
+  // ── Reference data row helper ─────────────────────────────────────────────
+  function getRefRows(listName) {
+    if (refOverrides[listName] && refOverrides[listName].rows) return refOverrides[listName].rows;
+    return refData[listName] ? refData[listName].rows : [];
+  }
 
   // ── Context value — all shared state/fns for child components ──────────────
   var ctxValue = {
