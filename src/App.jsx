@@ -380,7 +380,6 @@ function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisio
   const [archiveDecisions, setArchiveDecisions] = React.useState({});
   const [manualArchiveIds, setManualArchiveIds] = React.useState([]);
   const [partDecisions, setPartDecisions] = React.useState({});
-  const parts = rawParts.map(resolvePart);
   const [archiveMode, setArchiveMode] = React.useState('active'); // 'active' | 'all' | 'archived'
   const [dqFlagFilter, setDqFlagFilter] = React.useState('All');
   const [eopToast, setEopToast] = React.useState(false);
