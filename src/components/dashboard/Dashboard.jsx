@@ -59,6 +59,8 @@ function Dashboard(props) {
   }
 
 function UpcomingEvents() {
+  const ctx = React.useContext(AppContext);
+  const { MONTH_NAMES, teamEvents, calYear, setCalYear, calMonth, setCalMonth, selectedEventDate, setSelectedEventDate, eventModal, setEventModal } = ctx;
     const monthName = MONTH_NAMES[calMonth] + ' ' + calYear;
     // events for the visible month only
     const monthEvents = teamEvents.filter(function(e){ return e.year === calYear && e.month === calMonth; });
@@ -120,6 +122,8 @@ function EventModal() {
   }
 
 function MorningActionReport() {
+  const ctx = React.useContext(AppContext);
+  const { parts, marManager, setMarManager, setPage, oemKeys } = ctx;
     const today = 'June 9, 2026';
     const marOems = React.useMemo(function(){ return ['All'].concat(oemKeys); }, [oemKeys]);
     // OEM scope helper — every list below is filtered through this so the whole
@@ -171,91 +175,4 @@ function Section(props) {
   </div>
 </div><div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900"><span className="font-bold">How to use this:</span> Work top to bottom — red sections are time-sensitive (line-down fines, stockouts), then supply planning, then data cleanup. Click any item to jump to its detail. The AI ranks and explains; you make the final call.</div><div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><div className="space-y-4"><Section icon="🛑" title="Inactive With Demand" tone="orange" blurb="Parts marked inactive that still have future demand — do NOT archive. Reactivate or confirm service path first." items={inactiveWithDemand} line={function(p){ return 'Demand ' + p.demand + ' · ' + p.recommendation; }} onClick={function(it){ setSelectedPart(it); setPage('Master Terminal'); }} /></div><div className="space-y-4"><Section icon="⚠️" title="Duplicate Conflicts" tone="indigo" blurb="Same part number with differing OEM, plant, or price across sources. Needs human review before trusting the record." items={conflictItems} line={function(p){ return p.customerPart + ' · ' + p.dq.detail; }} onClick={function(it){ setSelectedPart(it); setPage('Data Quality Center'); }} /><Section icon="🧹" title="Placeholder / Junk IDs" tone="indigo" blurb="Rows with S / 0 / blank identifiers polluting the database. Clean up or remove." items={placeholderItems} line={function(p){ return 'Identifiers: ' + p.jss + ' / ' + p.customerPart; }} onClick={function(it){ setSelectedPart(it); setPage('Data Quality Center'); }} /><Section icon="💲" title="Price Review" tone="orange" blurb="Missing service price or thin margin vs. cost. Confirm pricing before quoting or shipping." items={priceItems} line={function(p){ return 'Price ' + p.price + ' · cost ' + p.cost; }} onClick={function(it){ setSelectedPart(it); setPage('Service Price Review'); }} /></div></div></div>;
   }
-
-  // ---------- REPORTS & EXPORTS ----------
-  // The system is a live relational database. Every export is built by joining the
-  // already-linked tables (parts ↔ EOP ↔ pricing ↔ SAP demand ↔ plant ↔ classification),
-  // so managers never stitch files together with VLOOKUP again. Pivot tables can be
-  // pre-built into the workbook; optional live VLOOKUP/XLOOKUP formulas can be written in
-  // for desktop sharing outside the system.
-  const liveArchiveCandidateCount = parts.filter(function(p){ var yr = parseInt(p.serviceEop, 10); var isManual = manualArchiveIds.indexOf(p.id) >= 0; return isManual || (p.demand === 0 && p.backlog === 0 && yr <= 2026); }).length;
-  const liveMorningRows = 0 + priceRows.length + parts.filter(function(p){ return p.dq && p.dq.flag !== 'Clean'; }).length;
-  const reportCatalog = [
-    { id: 'cleanup', icon: '🧹', tone: 'green', title: 'Cleanup Progress Report', desc: 'Active-list reduction over time, parts cleared per cycle, broken down by OEM and phase.', rows: parts.length, joins: ['Parts', 'Service Life Phase', 'Audit Log'], pivotHint: 'OEM × Phase, count of parts' },
-    { id: 'slp', icon: '⏳', tone: 'amber', title: 'Service Life Phase Report', desc: 'Phase 1–4 + Unknown Age breakdown with the biggest cleanup targets highlighted.', rows: parts.length, joins: ['Parts', 'EOP Records'], pivotHint: 'Phase × OEM, count of parts' },
-    { id: 'price', icon: '💲', tone: 'orange', title: 'Service Price Review Report', desc: 'Missing prices, below-cost and thin-margin parts with suggested target pricing.', rows: priceRows.length, joins: ['Parts', 'Pricing Records', 'Std Cost'], pivotHint: 'OEM × Issue, count + avg margin' },
-    { id: 'dq', icon: '🔍', tone: 'indigo', title: 'Data Quality Report', desc: 'Duplicate conflicts, linked one-to-many families, and invalid placeholder identifiers.', rows: parts.filter(function(p){ return p.dq && p.dq.flag !== 'Clean'; }).length, joins: ['Parts', 'All 3 ID fields'], pivotHint: 'Flag Type × OEM, count of rows' },
-    { id: 'archive', icon: '📦', tone: 'gray', title: 'Archive Candidate Report', desc: 'What is ready to archive, what is blocked, and what is waiting on approval.', rows: liveArchiveCandidateCount, joins: ['Parts', 'EOP', 'Demand', 'Audit Log'], pivotHint: 'Archive Status × OEM, count' },
-    { id: 'morning', icon: '☀️', tone: 'blue', title: 'Morning Action Report', desc: 'The daily briefing — every action category in one shareable export.', rows: liveMorningRows, joins: ['Risk', 'Data Quality', 'Pricing', 'Parts'], pivotHint: 'Category × Priority, count' },
-    { id: 'master', icon: '🗃️', tone: 'blue', title: 'Full Master Terminal Export', desc: 'The entire filtered service database — every field, every part, pre-joined.', rows: parts.length, joins: ['All tables'], pivotHint: 'OEM × Classification, count + demand' }
-  ];
-
-  const recentExports = [
-    { name: 'Cleanup Progress — May 2026.xlsx', by: 'Yusuki Yamaski', when: 'Today 08:22', fmt: 'XLSX · Pivot + Raw', rows: '13,810' },
-    { name: 'Service Price Review.csv', by: 'Harry Lee', when: 'Yesterday 16:31', fmt: 'CSV · Flat', rows: '5' },
-    { name: 'Morning Action Report.pdf', by: 'Auto Schedule', when: 'Yesterday 06:00', fmt: 'PDF', rows: '9' }
-  ];
-
-  const scheduledExports = [
-    { name: 'Morning Action Report', cadence: 'Every weekday · 6:00 AM', to: 'Service + Planning leads', fmt: 'PDF', on: true },
-    { name: 'Cleanup Progress Report', cadence: 'Mondays · 7:00 AM', to: 'Leadership', fmt: 'XLSX (Pivot)', on: true }
-  ];
-  const riskRows = [];
-
-  async function handleReportExport() {
-  if (exportFormat === 'xlsx' && typeof ExcelJS === 'undefined') { alert('ExcelJS library not loaded.'); return; }
-  var oemFilter = reportOem === 'All' ? null : reportOem.toUpperCase();
-  var filterOem = function(arr){ return oemFilter ? arr.filter(function(p){ return (p.oem||'').toUpperCase() === oemFilter; }) : arr; };
-  var rpt = reportCatalog.find(function(r){ return r.id === selectedReport; }) || reportCatalog[0];
-  var COLS = {};
-Object.keys(REPORT_COLUMNS).forEach(function(rptId){
-  COLS[rptId] = REPORT_COLUMNS[rptId].map(function(k){
-    var c = COLUMN_REGISTRY[k];
-    return { header: c.header, key: c.exportVal ? '_ev_'+k : c.key, _exportVal: c.exportVal || null };
-  });
-});
-  var cols = COLS[selectedReport] || COLS.master;
-  var raw;
-  if (selectedReport === 'price') { raw = filterOem(priceRows); }
-  else if (selectedReport === 'archive') { raw = filterOem(archiveRows).map(function(p){ return resolvePart(p); }); }
-  else { raw = filterOem(parts).map(function(p){ return Object.assign({}, p, { dqLabel: p.dq ? p.dq.label : '', dqDetail: p.dq ? p.dq.detail : '', archiveStatus: (partDecisions[p.id] || {}).archiveStatus || p.archiveStatus || '' }); }); }
-  var fileName = rpt.title.replace(/[^a-z0-9]/gi, '_') + '_' + new Date().toISOString().slice(0,10);
-  if (exportFormat === 'csv') {
-    var lines = [cols.map(function(c){ return '"'+c.header+'"'; }).join(',')];
-    raw.forEach(function(r){ lines.push(cols.map(function(c){ var v = c._exportVal ? c._exportVal(r) : r[c.key]; return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; }).join(',')); });
-    var b = new Blob([lines.join('\n')],{type:'text/csv'}); var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download=fileName+'.csv'; a.click(); return;
-  }
-  if (exportFormat === 'pdf') {
-    var th = '<tr>'+cols.map(function(c){ return '<th style="border:1px solid #ccc;padding:5px 8px;background:#1e3a5f;color:#fff;font-size:10px">'+c.header+'</th>'; }).join('')+'</tr>';
-    var tb = raw.map(function(r){ return '<tr>'+cols.map(function(c){ return '<td style="border:1px solid #eee;padding:4px 8px;font-size:10px">'+String(r[c.key]==null?'':r[c.key])+'</td>'; }).join('')+'</tr>'; }).join('');
-    var w = window.open('','_blank'); w.document.write('<html><head><title>'+rpt.title+'</title></head><body><h2 style="font-family:sans-serif;font-size:14px">'+rpt.title+'</h2><p style="font-family:sans-serif;font-size:11px">Generated: '+new Date().toLocaleString()+(reportOem!=='All'?' · OEM: '+reportOem:'')+'</p><table style="border-collapse:collapse;width:100%"><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></body></html>'); w.document.close(); w.focus(); w.print(); return;
-  }
-  var wb2 = new ExcelJS.Workbook(); wb2.creator='Service Database'; wb2.created=new Date();
-  function addSheet(wb2, name, data, cols) {
-    var ws = wb2.addWorksheet(name.slice(0,31));
-    ws.columns = cols.map(function(c){ return {header:c.header,key:c.key,width:20}; });
-    ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E3A5F'}};
-    data.forEach(function(r){ ws.addRow(cols.reduce(function(acc,c){ var v = c._exportVal ? c._exportVal(r) : r[c.key]; acc[c.key]=v==null?'':v; return acc; },{})); });
-    return ws;
-  }
-  if (excelStructure === 'flat') { addSheet(wb2, rpt.title, raw, cols); }
-  else if (excelStructure === 'pivot') {
-    addSheet(wb2, 'Raw Data', raw, cols);
-    var ps = wb2.addWorksheet('Pivot Guide'); ps.addRow(['Suggested pivot: '+rpt.pivotHint]); ps.getRow(1).font={bold:true}; ps.addRow(['→ Insert > PivotTable on the Raw Data sheet to build this pivot.']);
-  } else if (excelStructure === 'vlookup') {
-    addSheet(wb2, 'Raw Data', raw, cols);
-    var vs = wb2.addWorksheet('Formula View');
-    vs.columns = cols.map(function(c){ return {header:c.header,key:c.key,width:20}; });
-    vs.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; vs.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E3A5F'}};
-    raw.forEach(function(r,ri){ var ro=vs.getRow(ri+2); cols.forEach(function(c,ci){ ro.getCell(ci+1).value={formula:"='Raw Data'!"+String.fromCharCode(65+ci)+(ri+2)}; }); });
-  } else if (excelStructure === 'multi') {
-    var sum = wb2.addWorksheet('Summary'); sum.addRow([rpt.title]); sum.getRow(1).font={bold:true,size:14}; sum.addRow(['Generated: '+new Date().toLocaleString()]); sum.addRow(['OEM Filter: '+reportOem]); sum.addRow(['Total Rows: '+raw.length]); sum.addRow([]);
-    var oc={}; raw.forEach(function(r){ var o=r.oem||'Unknown'; oc[o]=(oc[o]||0)+1; }); sum.addRow(['OEM','Count']); sum.getRow(sum.rowCount).font={bold:true}; Object.keys(oc).sort().forEach(function(o){ sum.addRow([o,oc[o]]); });
-    addSheet(wb2, 'Raw Data', raw, cols);
-    var pg=wb2.addWorksheet('Pivot Guide'); pg.addRow(['Suggested: '+rpt.pivotHint]); pg.addRow(['→ Insert > PivotTable on the Raw Data sheet.']);
-  }
-  var buf = await wb2.xlsx.writeBuffer();
-  var bl = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); var a2=document.createElement('a'); a2.href=URL.createObjectURL(bl); a2.download=fileName+'.xlsx'; a2.click();
-}
-
 export { Dashboard };
