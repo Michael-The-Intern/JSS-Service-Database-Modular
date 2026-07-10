@@ -241,21 +241,6 @@ function ActionBadge(props) { return <span className={'px-2 py-1 rounded-full te
     return { price: price, cost: cost, hasPrice: hasPrice, hasCost: hasCost, margin: margin, target: target, issue: issue, tone: tone, level: level, note: note };
   }
 
-  // every part that is flagged for pricing OR has a price/cost problem
-  const priceRows = parts
-    .map(function(p){ return Object.assign({}, p, { pr: priceAnalyze(p) }); });
-    // All active parts flow into SPR; tab filters narrow the view.
-
-  const priceCounts = {
-    noData:         priceRows.filter(function(p){ return p.pr.issue === 'NO PRICE / NO COST'; }).length,
-    missingPrice:   priceRows.filter(function(p){ return p.pr.issue === 'MISSING PRICE'; }).length,
-    missingCost:    priceRows.filter(function(p){ return p.pr.issue === 'MISSING COST'; }).length,
-    belowCost:      priceRows.filter(function(p){ return p.pr.issue === 'BELOW COST'; }).length,
-    thin:           priceRows.filter(function(p){ return p.pr.issue === 'THIN MARGIN'; }).length,
-    flagged:        priceRows.filter(function(p){ return !!p.reviewFlag; }).length,
-    healthy:        priceRows.filter(function(p){ return p.pr.issue === 'HEALTHY MARGIN'; }).length
-  };
-
   // ---------- SERVICE PRICE: per-part decision History drawer ----------
   // Shows the running trail of pricing decisions made on a part this session (approve / manager /
   // cost-request), each stamped with who, when, the price, and the reference year graded under.
