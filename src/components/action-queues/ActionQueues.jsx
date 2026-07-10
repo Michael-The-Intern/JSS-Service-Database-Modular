@@ -306,22 +306,6 @@ function DismissModal(props) {
   // Every entry: who, when, action type, source module, target record, before → after, reversible flag.
   // This is the trust backbone — nothing is ever silently deleted; every move is recorded and (mostly) reversible.
 
-  React.useEffect(function() {
-    var notifs = [];
-    var liveParts = rawParts.map(function(p){ return Object.assign({}, p, { dq: dqFlag(p) }); });
-    var inactiveWithDemand = liveParts.filter(function(p){ return String(p.active||'').toUpperCase()==='INACTIVE' && p.demand > 0; });
-    if (inactiveWithDemand.length > 0) notifs.push({ id:'N-live-01', icon:'🛑', title: inactiveWithDemand.length + ' inactive part' + (inactiveWithDemand.length>1?'s':'') + ' still have demand', body:'Hard-stop condition — review before any archive run.', page:'Master Terminal', time:'now', read:false, tone:'red' });
-    var missingPrice = liveParts.filter(function(p){ return !p.price && String(p.active||'').toUpperCase()==='ACTIVE'; });
-    if (missingPrice.length > 0) notifs.push({ id:'N-live-02', icon:'💲', title: missingPrice.length + ' part' + (missingPrice.length>1?'s':'') + ' missing a service price', body:'Cannot quote or ship until pricing is confirmed.', page:'Service Price Review', time:'now', read:false, tone:'orange' });
-    var dqDupes = liveParts.filter(function(p){ return p.dq && p.dq.type === 'DUPLICATE'; });
-    if (dqDupes.length > 0) notifs.push({ id:'N-live-03', icon:'⚠️', title: dqDupes.length + ' duplicate conflict' + (dqDupes.length>1?'s':'') + ' detected', body:'Same customer part ID found under multiple OEMs or prices.', page:'Data Quality Center', time:'now', read:false, tone:'indigo' });
-    var archiveReady = liveParts.filter(function(p){ return String(p.active||'').toUpperCase()==='INACTIVE' && !(p.demand > 0) && !(p.backlog > 0); });
-    if (archiveReady.length > 0) notifs.push({ id:'N-live-04', icon:'🧹', title: archiveReady.length + ' archive candidate' + (archiveReady.length>1?'s':'') + ' ready for review', body:'Passed all safety checks. Ready to clean up.', page:'Archive Review', time:'now', read:false, tone:'green' });
-    var lastImport = (rawAudit||[]).filter(function(a){ return a.action === 'IMPORT COMMIT'; })[0];
-    if (lastImport) notifs.push({ id:'N-live-05', icon:'📥', title: (lastImport.target||'Import') + ' completed', body:'Data imported successfully. Review in Import Wizard.', page:'Import Wizard', time: lastImport.ts ? new Date(lastImport.ts).toLocaleDateString() : 'recently', read:true, tone:'blue' });
-    setNotifications(notifs);
-  }, [rawParts, rawAudit]);
-
   // ── Helper: fire-and-forget write to Supabase ────────────────────
   function _supaWrite(table, row) {
     _supa.from(table).upsert(row).then(function(r){ if(r && r.error) console.warn('Supabase write error:', table, r.error); }, function(e){ console.warn('Supabase write error:', table, e); });
