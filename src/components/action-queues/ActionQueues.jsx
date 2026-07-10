@@ -305,32 +305,6 @@ function DismissModal(props) {
   // ---------- AUDIT HISTORY: immutable change log ----------
   // Every entry: who, when, action type, source module, target record, before → after, reversible flag.
   // This is the trust backbone — nothing is ever silently deleted; every move is recorded and (mostly) reversible.
-  const [rawAudit, setRawAudit] = React.useState([]);
-  // ── Supabase bootstrap: load all tables on mount ─────────────────
-  React.useEffect(function() {
-    _supa.from('parts').select('*').then(function(pRes){ if (pRes.data && pRes.data.length > 0) setRawParts(pRes.data); }, function(e){ console.warn('Supabase parts load error:', e); });
-
-    _supa.from('audit_log').select('*').order('ts', { ascending: false }).then(function(aRes){
-      if (aRes.data && aRes.data.length > 0) setRawAudit(aRes.data);
-    }, function(e){ console.warn('Supabase audit load error:', e); });
-
-    _supa.from('price_decisions').select('*').then(function(pdRes) {
-      if (pdRes.data && pdRes.data.length > 0) {
-        var pdMap = {};
-        pdRes.data.forEach(function(r) { pdMap[r.partId] = r; });
-        setPriceDecisions(pdMap);
-      }
-    }, function(e){ console.warn('Supabase price decisions load error:', e); });
-
-    _supa.from('tasks').select('*').then(function(tRes){
-      if (tRes.data) {
-        var auto = tRes.data.filter(function(t){ return t.source && t.source !== 'Manual'; });
-        var manual = tRes.data.filter(function(t){ return !t.source || t.source === 'Manual'; });
-        setQueueTasks(auto);
-        setCustomTasks(manual);
-      }
-    }, function(e){ console.warn('Supabase tasks load error:', e); });
-  }, []);
 
   React.useEffect(function() {
     var notifs = [];
