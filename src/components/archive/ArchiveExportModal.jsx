@@ -8,7 +8,7 @@ import { _supa } from '../../lib/supabase.js';
 import { Badge, ArchiveBadge } from '../shared/Badge.jsx';
 
 
-function ArchiveExportModal({ rows, selectedIds, exportView, setExportView, archiveExportOpen, setArchiveExportOpen }) {
+function ArchiveExportModal(props) {
   const ctx = React.useContext(AppContext);
   const {
     setArchiveExportOpen,
