@@ -51,7 +51,8 @@ function QuickActions() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    joysonLogoUrl
   } = ctx;
     const moduleCards = [
       { tab: 'Master Terminal', icon: '🗃️', tone: 'blue', desc: 'Open the full service part database with Excel-style filters for status, priority, duplicates, backlog, and price review.' },

@@ -51,7 +51,8 @@ function ReferenceData() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    refData
   } = ctx;
     const listNames = Object.keys(refData);
     const active = refData[refList] || refData[listNames[0]];

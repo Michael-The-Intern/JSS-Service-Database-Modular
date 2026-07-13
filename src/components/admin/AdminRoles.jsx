@@ -51,7 +51,8 @@ function AdminRoles() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    ADMIN_PERMS, ADMIN_PERM_LABELS
   } = ctx;
     // ---- GATING: only Admin may change roles/permissions. Everyone else is read-only. ----
     const ro = !canEdit();

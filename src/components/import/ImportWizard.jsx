@@ -52,7 +52,8 @@ function ImportWizard() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    importTargetGroups, refData
   } = ctx;
     const steps = ['Upload File', 'Configure & Filter', 'Scan & Map', 'Validate', 'Preview', 'Approve'];
 

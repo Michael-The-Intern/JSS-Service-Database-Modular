@@ -1697,6 +1697,13 @@ function SignIn() {
 
   // ── Context value — all shared state/fns for child components ──────────────
   var ctxValue = {
+    oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions,
+    plantOptions, plantCodesFor,
+    STATUS, EVENT_TYPES, joysonLogoUrl, phaseMeta,
+    CANONICAL_OEMS, ADMIN_PERMS, ADMIN_PERM_LABELS, importTargetGroups,
+    refData, yearIsPinned, floorPrice, targetPrice, dqCounts,
+    rawTasks, riskRows,
+
     // Navigation
     page, setPage,
     // Derived data

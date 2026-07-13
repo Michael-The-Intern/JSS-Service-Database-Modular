@@ -12,8 +12,7 @@ import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 
 function MasterTerminal() {
   const ctx = React.useContext(AppContext);
-  const { page, setPage, parts, filteredParts, oemDropdownOptions, priorityOptions, plantDropdownOptions, 
-    categoryDropdownOptions, subcategoryOptions, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
+  const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
@@ -55,7 +54,8 @@ function MasterTerminal() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    filteredParts, oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions
   } = ctx;
     const bulkActions = [
       { key: 'reactivate', icon: '🔄', label: 'Reactivate Selected', desc: 'Set status to ACTIVE for parts flagged inactive-with-demand. Logged + reversible.', approver: 'Service Lead' },
