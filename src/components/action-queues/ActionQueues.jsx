@@ -53,8 +53,7 @@ function ActionQueues() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed,
-    STATUS, oemKeys
+    marManager, setMarManager, canEdit, currentUser, authed, oemKeys
   } = ctx;
 
     const roles = ['All Roles', 'Admin', 'VP', 'Director / GKAM', 'Manager', 'Read Only'];

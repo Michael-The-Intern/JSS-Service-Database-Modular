@@ -54,8 +54,7 @@ function ServicePriceReview() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed,
-    floorPrice, targetPrice
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
     const [priceEditOpen, setPriceEditOpen] = React.useState(false);
     const [priceEditDraft, setPriceEditDraft] = React.useState({ price: '', cost: '' });

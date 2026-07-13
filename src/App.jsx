@@ -1699,9 +1699,9 @@ function SignIn() {
   var ctxValue = {
     oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions,
     plantOptions, plantCodesFor,
-    STATUS, EVENT_TYPES, joysonLogoUrl, phaseMeta,
+    EVENT_TYPES, joysonLogoUrl, phaseMeta,
     CANONICAL_OEMS, ADMIN_PERMS, ADMIN_PERM_LABELS, importTargetGroups,
-    refData, yearIsPinned, floorPrice, targetPrice, dqCounts,
+    refData, yearIsPinned, dqCounts,
     rawTasks, riskRows,
 
     // Navigation

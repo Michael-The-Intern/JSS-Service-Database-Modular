@@ -52,8 +52,7 @@ function AuditHistory() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed,
-    STATUS
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
     const actionTones = {
       'IMPORT COMMIT': 'bg-blue-100 text-blue-800 border-blue-200',
