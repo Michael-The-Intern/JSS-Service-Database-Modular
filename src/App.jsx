@@ -1681,7 +1681,7 @@ function SignIn() {
   var userInitials = currentUser.name.split(' ').map(function(s){ return s[0]; }).join('').slice(0, 2);
 
 
-  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
 
 
   // ── Supabase write helper ─────────────────────────────────────────────────
