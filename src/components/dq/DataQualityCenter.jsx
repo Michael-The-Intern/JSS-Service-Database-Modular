@@ -7,6 +7,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 import { _supa } from '../../lib/supabase.js';
 import { DQBadge } from '../shared/Badge.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 
 function DataQualityCenter() {
@@ -53,7 +54,7 @@ function DataQualityCenter() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed, CANONICAL_OEMS, dqCounts, plantCodesFor, plantOptions, refData
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
     const dqOemOpts = ((refData['OEM / Customer List'] && refData['OEM / Customer List'].rows.length > 0) ? refData['OEM / Customer List'].rows.map(function(r){ return r[0]; }) : CANONICAL_OEMS).map(function(k){ return { key: k, label: k }; });
     const dqPlantOpts = plantOptions.map(function(p){ return { key: p.code, label: p.acronym + ' — ' + p.displayName + ' · ' + p.commodity }; });

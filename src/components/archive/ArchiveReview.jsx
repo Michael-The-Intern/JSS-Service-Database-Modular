@@ -4,6 +4,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 import { Badge, ArchiveBadge } from '../shared/Badge.jsx';
 import { ArchiveSubmitModal } from './ArchiveSubmitModal.jsx';
 import { _supa } from '../../lib/supabase.js';
+import { StatCard } from '../shared/StatCard.jsx';
 
 var ArchiveReview = React.memo(function ArchiveReview({ mainScrollRef, onOpenDetail, appSelectedPart, parts, archiveDecisions, setArchiveDecisions, manualArchiveIds, partDecisions, setPartDecisions, currentUser, _supaWrite, archiveAudit, setArchiveAudit, archiveMode, setArchiveMode, isArchived, resolvePart, setQueueTasks }) {
     // ---- archive-only state (local — does NOT trigger outer App re-renders) ----

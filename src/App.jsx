@@ -1696,6 +1696,49 @@ function SignIn() {
   
 
   // ── Context value — all shared state/fns for child components ──────────────
+    // ---- Injected: priceRows + reportCatalog (recovered) ----
+    function priceReview(p){
+      var price = (p && p.price != null && p.price !== '') ? Number(p.price) : NaN;
+      var cost  = (p && p.cost  != null && p.cost  !== '') ? Number(p.cost)  : NaN;
+      var hasPrice = !isNaN(price) && price > 0;
+      var hasCost  = !isNaN(cost)  && cost  > 0;
+      var out = { price: hasPrice?price:null, cost: hasCost?cost:null, hasCost: hasCost, margin: null, target: null, floor: null, issue: 'HEALTHY MARGIN', tone: 'green', note: '' };
+      if (!hasPrice && !hasCost) { out.issue='NO PRICE / NO COST'; out.tone='red'; return out; }
+      // Pull rate band for this part's service-life phase (Goal/Floor multipliers)
+      var yl = null;
+      try { yl = servicePhase(p).yearsLeft; } catch(e){}
+      var band = null;
+      try { band = rateBandFor(yl); } catch(e){}
+      if (hasCost && band) {
+        out.target = +(cost * band.target).toFixed(2);
+        out.floor  = +(cost * band.floor).toFixed(2);
+      }
+      if (!hasPrice) { out.issue='MISSING PRICE'; out.tone='amber'; return out; }
+      if (!hasCost)  { out.issue='MISSING COST';  out.tone='amber'; return out; }
+      out.margin = (price - cost) / price;
+      if (price < cost) { out.issue='BELOW COST'; out.tone='red'; return out; }
+      if (out.floor && price < out.floor)   { out.issue='BELOW FLOOR';  out.tone='red';   return out; }
+      if (out.target && price < out.target) { out.issue='THIN MARGIN';  out.tone='amber'; return out; }
+      return out;
+    }
+    var priceRows = (parts || []).map(function(p){
+      var pd = (priceDecisions && priceDecisions[p.id]) || {};
+      return Object.assign({}, p, {
+        pr: priceReview(p),
+        reviewFlag: !!pd.reviewFlag,
+        reviewNote: pd.reviewNote || '',
+        reviewFlaggedAt: pd.reviewFlaggedAt || null
+      });
+    });
+    var reportCatalog = [
+      { id:'master',  title:'Master Terminal Export',      icon:'📋', tone:'blue',   desc:'Full parts list with all fields, decisions, and flags.',                     joins:['Parts','Decisions','Phase'], pivotHint:'OEM x Priority', rows:(parts||[]).length },
+      { id:'cleanup', title:'Cleanup Progress',            icon:'🧹', tone:'green',  desc:'Progress by OEM: resolved vs outstanding data quality issues.',              joins:['Parts','DQ Flags','Decisions'], pivotHint:'OEM x DQ Flag', rows:(parts||[]).length },
+      { id:'phase',   title:'Service Life Phase',          icon:'⏳', tone:'indigo', desc:'Parts grouped by service life phase (Active / EOP soon / EOP / EOS).',       joins:['Parts','Phase'], pivotHint:'OEM x Phase', rows:(parts||[]).length },
+      { id:'dq',      title:'Data Quality Center',         icon:'🧪', tone:'amber',  desc:'Every DQ issue by type — duplicates, missing fields, conflicts.',           joins:['Parts','DQ Flags'], pivotHint:'DQ Flag x OEM', rows:(parts||[]).length },
+      { id:'archive', title:'Archive Candidates',          icon:'📦', tone:'gray',   desc:'Parts eligible for archive (no demand, no backlog, past EOP) + manual adds.',joins:['Parts','Archive Decisions'], pivotHint:'OEM x Reason', rows:(parts||[]).filter(function(p){ var yr=parseInt(p.serviceEop,10); return (manualArchiveIds||[]).indexOf(p.id)>=0 || (p.demand===0 && p.backlog===0 && yr<=CURRENT_YEAR); }).length },
+      { id:'price',   title:'Service Price Review',        icon:'💲', tone:'red',    desc:'Every part with a pricing issue: below cost, thin margin, missing price/cost.',joins:['Parts','Pricing','Rate Bands'], pivotHint:'OEM x Issue', rows:priceRows.filter(function(r){ return r.pr.issue !== 'HEALTHY MARGIN'; }).length }
+    ];
+
   var ctxValue = {
     oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions,
     plantOptions, plantCodesFor,
@@ -1777,6 +1820,8 @@ function SignIn() {
     marManager, setMarManager,
     // Reference-derived lists
     oemKeys,
+  
+    priceRows: priceRows, reportCatalog: reportCatalog, priceReview: priceReview,
   };
 
   return <AppContext.Provider value={ctxValue}><div className="h-screen bg-gray-100 flex font-sans text-gray-900"><aside className="w-72 bg-gray-900 text-white overflow-auto"><div className="p-5 border-b border-gray-700"><div className="text-lg font-bold">Service Database</div><div className="text-xs text-gray-400">Automotive Safety Control Center</div></div><nav className="p-3">{navGroups.map(function(g){ return <div key={g.label} className="mb-4"><div className="text-xs uppercase tracking-wide text-gray-500 px-3 mb-2">{g.label}</div>{g.items.map(function(item){ return <button key={item} onClick={function(){setPage(item);}} className={(page === item ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800') + ' w-full text-left rounded-lg px-3 py-2 text-sm mb-1'}>{item}</button>; })}</div>; })}</nav></aside><main className="flex-1 flex overflow-hidden"><div ref={scrollRef} id="main-scroll-container" className="flex-1 overflow-auto"><div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3"><GlobalSearch parts={parts} rawTasks={rawTasks} customTasks={customTasks} riskRows={riskRows} partDecisions={partDecisions} setPage={setPage} setSelectedPart={setSelectedPart} /><input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChosen} className="hidden" /><button onClick={handleUploadClick} className="bg-gray-100 rounded-lg px-3 py-2 text-sm hover:bg-gray-200">Upload File</button><button onClick={handleExport} title="Quick export of the full Master Terminal. For filtered/section exports, use the Master Terminal tab." className="bg-gray-100 rounded-lg px-3 py-2 text-sm hover:bg-gray-200">Quick Export</button><button onClick={function(){ setYearSettingsOpen(true); }} title={yearIsPinned ? 'Reference year is PINNED to ' + CURRENT_YEAR + ' for back-dated analysis. Click to change.' : 'Reference year auto-rolls with the live clock (' + CURRENT_YEAR + '). Click to pin a year for audits.'} className={'rounded-lg px-3 py-2 text-sm font-medium border flex items-center gap-1 ' + (yearIsPinned ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200')}>📅 {CURRENT_YEAR}{yearIsPinned && <span className="text-xs">· pinned</span>}</button><button onClick={function(){ setNotifOpen(!notifOpen); }} className="relative bg-blue-600 text-white rounded-lg px-3 py-2 text-sm">Notifications{unreadCount > 0 && <span className="ml-2 bg-white text-blue-700 rounded-full px-2 py-0.5 text-xs font-bold">{unreadCount}</span>}</button><div className="flex items-center gap-2 border-l border-gray-200 pl-3"><div className="w-8 h-8 rounded-full bg-gray-800 text-white text-xs font-bold flex items-center justify-center">{userInitials}</div><div className="hidden md:block leading-tight"><div className="text-xs font-semibold text-gray-900">{currentUser.name}</div><div className="text-xs text-gray-500">{currentUser.email}</div>{currentUser.title && <div className="text-xs text-gray-400 italic">{currentUser.title}</div>}</div><div className="flex items-center gap-1"><span className="text-xs text-gray-400 hidden lg:inline">Role:</span><span className={'rounded-full border text-xs font-medium px-2 py-1 ' + (currentUser.email === 'Michael.Colon@joysonsafety.com' ? 'bg-yellow-100 text-yellow-800 border-yellow-400' : (roleStyles[currentUser.role] || roleStyles['Read-Only']))}>{currentUser.role}</span></div><button onClick={function(){ setAuthed(false); }} title="Sign out" className="text-xs text-gray-400 hover:text-gray-700 ml-1">Sign out</button></div></div><NotificationsPanel /><div className="p-6">{Content()}</div>{eventModal && <EventModal />}{actionModal && <ActionModal />}{yearSettingsOpen && <YearSettingsModal />}{/* SourceHistoryModal removed — not exported/imported; latent ReferenceError. Restore once wired to context. */}</div>{page !== 'archive' && <DetailPanel />}</main></div></AppContext.Provider>;

@@ -51,7 +51,7 @@ function ReportsExports() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed, reportCatalog, priceRows
   } = ctx;
     const oemOptions = ['All', 'STELLANTIS', 'HONDA', 'GM', 'FORD', 'TOYOTA', 'NISSAN', 'SUBARU', 'HYUNDAI/KIA', 'VW', 'BMW', 'TESLA', 'MERCEDES', 'MAZDA'];
     const formats = [

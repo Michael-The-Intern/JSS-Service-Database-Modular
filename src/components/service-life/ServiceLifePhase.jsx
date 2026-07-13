@@ -7,6 +7,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 
 function ServiceLifePhase() {
@@ -53,8 +54,7 @@ function ServiceLifePhase() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed,
-    oemKeys, phaseMeta, refData, yearIsPinned
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
     var phased = parts.map(function(p){ var ph = servicePhase(p); return Object.assign({}, p, { phase: ph.key, yearsLeft: ph.yearsLeft }); });
     var order = ['PHASE 1', 'PHASE 2', 'PHASE 3', 'PHASE 4', 'UNKNOWN AGE'];

@@ -6,6 +6,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { SearchBox } from '../shared/SearchBox.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 
 function AuditHistory() {

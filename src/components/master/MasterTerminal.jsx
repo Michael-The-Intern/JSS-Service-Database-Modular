@@ -8,6 +8,7 @@ import { _supa } from '../../lib/supabase.js';
 import { Badge } from '../shared/Badge.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
+import { Table } from '../shared/Table.jsx';
 
 
 function MasterTerminal() {
@@ -54,8 +55,7 @@ function MasterTerminal() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed,
-    filteredParts, oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
     const bulkActions = [
       { key: 'reactivate', icon: '🔄', label: 'Reactivate Selected', desc: 'Set status to ACTIVE for parts flagged inactive-with-demand. Logged + reversible.', approver: 'Service Lead' },

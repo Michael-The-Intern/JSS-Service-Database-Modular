@@ -10,6 +10,7 @@ import { _supa } from '../../lib/supabase.js';
 import { Badge } from '../shared/Badge.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 function ActionQueues() {
   const ctx = React.useContext(AppContext);
@@ -36,7 +37,7 @@ function ActionQueues() {
     importGlobalPlant, setImportGlobalPlant, importAckNoCust, setImportAckNoCust,
     importSavedProfiles, setImportSavedProfiles, importWorkbookBuf,
     handleUploadClick, handleFileChosen, queueTasks, setQueueTasks,
-    customTasks, setCustomTasks, riskRows, taskActions, setTaskActions, taskAudit, setTaskAudit,
+    customTasks, setCustomTasks, rawTasks, riskRows, taskActions, setTaskActions, taskAudit, setTaskAudit,
     auditAction, setAuditAction, auditModule, setAuditModule,
     auditUser, setAuditUser, auditSearch, setAuditSearch, selectedAudit, setSelectedAudit,
     archiveAudit, setArchiveAudit, priceFilter, setPriceFilter,
@@ -53,7 +54,7 @@ function ActionQueues() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed, oemKeys
+    marManager, setMarManager, canEdit, currentUser, authed
   } = ctx;
 
     const roles = ['All Roles', 'Admin', 'VP', 'Director / GKAM', 'Manager', 'Read Only'];
