@@ -52,6 +52,9 @@ function App() {
   const [dqSelIdentifiers, setDqSelIdentifiers] = React.useState([]);
   const [dqSelPlants, setDqSelPlants] = React.useState([]);
   const [dqSelCategories, setDqSelCategories] = React.useState([]);
+  const [rawParts, setRawParts] = React.useState([]);
+  const [rawAudit, setRawAudit] = React.useState([]);
+  const [notifications, setNotifications] = React.useState([]);
 
 function parseDelimited(text){
   var lines = text.split(/\r\n|\n|\r/).filter(function(l){ return l.trim() !== ''; });
@@ -324,8 +327,6 @@ async function handleExport() {
 }
 function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisions[p.id]; if (ad && (ad.status === 'Archived' || ad.status === 'ARCHIVED')) return true; if (d && (d.status === 'ARCHIVED' || d.status === 'Archived')) return true; if (d && d.archiveStatus === 'Archived') return true; if (p.archiveStatus === 'Archived' && !(d && d.archiveStatus && d.archiveStatus !== 'Archived')) return true; return false; }
 
-  const [rawParts, setRawParts] = React.useState([]);
-  const [rawAudit, setRawAudit] = React.useState([]);
 
   // ── Supabase bootstrap: load all tables on mount ─────────────────
   React.useEffect(function() {
@@ -430,7 +431,6 @@ function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisio
   const [eopFilter, setEopFilter] = React.useState('All');
   const [actionModal, setActionModal] = React.useState(null);
   const [notifOpen, setNotifOpen] = React.useState(false);
-  const [notifications, setNotifications] = React.useState([]);
 
   const unreadCount = notifications.filter(function(n){ return !n.read; }).length;
   const scrollRef = React.useRef(null);
