@@ -37,7 +37,7 @@ function ActionQueues() {
     importGlobalPlant, setImportGlobalPlant, importAckNoCust, setImportAckNoCust,
     importSavedProfiles, setImportSavedProfiles, importWorkbookBuf,
     handleUploadClick, handleFileChosen, queueTasks, setQueueTasks,
-    customTasks, setCustomTasks, rawTasks, riskRows, taskActions, setTaskActions, taskAudit, setTaskAudit,
+    customTasks, setCustomTasks, riskRows, taskActions, setTaskActions, taskAudit, setTaskAudit,
     auditAction, setAuditAction, auditModule, setAuditModule,
     auditUser, setAuditUser, auditSearch, setAuditSearch, selectedAudit, setSelectedAudit,
     archiveAudit, setArchiveAudit, priceFilter, setPriceFilter,
