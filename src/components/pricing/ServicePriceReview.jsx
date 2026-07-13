@@ -8,6 +8,7 @@ import { _supa } from '../../lib/supabase.js';
 import { PriceInput } from '../shared/PriceInput.jsx';
 import { Badge } from '../shared/Badge.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 
 function ServicePriceReview() {
