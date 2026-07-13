@@ -47,14 +47,64 @@ function App() {
   const [categoryFilter, setCategoryFilter] = React.useState('All');
   const [sortKey, setSortKey] = React.useState(null);
   const [sortDir, setSortDir] = React.useState('asc');
+
   const fileInputRef = React.useRef(null);
+
   const [dqSelOEMs, setDqSelOEMs] = React.useState([]);
   const [dqSelIdentifiers, setDqSelIdentifiers] = React.useState([]);
   const [dqSelPlants, setDqSelPlants] = React.useState([]);
   const [dqSelCategories, setDqSelCategories] = React.useState([]);
+
   const [rawParts, setRawParts] = React.useState([]);
   const [rawAudit, setRawAudit] = React.useState([]);
   const [notifications, setNotifications] = React.useState([]);
+
+  // Shared constants surfaced via ctx
+  const SAFE_DEFAULTS = {
+    oem: '',
+    plant: '',
+    customerPart: '',
+    jss: '',
+    altJss: '',
+    desc: '',
+    active: 'ACTIVE',
+    type: '',
+    component: 'UNASSIGNED',
+    subcategory: '',
+    program: '',
+    price: '',
+    cost: '',
+    demand: 0,
+    backlog: 0,
+    serviceSop: '',
+    serviceEop: '',
+    serialSop: '',
+    serialEop: '',
+    category: '',
+    productCategory: '',
+    recommendation: '',
+    owner: '',
+    notes: ''
+  };
+
+  const MONTH_NAMES = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
+
+  // Seed arrays consumed by GlobalSearch
+  const rawTasks = [];
+  const riskRows = [];
 
 function parseDelimited(text){
   var lines = text.split(/\r\n|\n|\r/).filter(function(l){ return l.trim() !== ''; });
