@@ -12,7 +12,7 @@ import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 
 function MasterTerminal() {
   const ctx = React.useContext(AppContext);
-  const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
+  const { page, setPage, parts, filteredParts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,

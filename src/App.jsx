@@ -1680,10 +1680,6 @@ function SignIn() {
   var roleStyles = { 'Admin': 'bg-green-100 text-green-800 border-green-300', 'Manager': 'bg-blue-100 text-blue-800 border-blue-300', 'Service': 'bg-amber-100 text-amber-800 border-amber-300', 'Read-Only': 'bg-gray-100 text-gray-600 border-gray-300' };
   var userInitials = currentUser.name.split(' ').map(function(s){ return s[0]; }).join('').slice(0, 2);
 
-
-
-
-
   // ── Supabase write helper ─────────────────────────────────────────────────
   function _supaWrite(table, row) {
     _supa.from(table).upsert(row).then(function(r){ if(r && r.error) console.warn('Supabase write error:', table, r.error); }, function(e){ console.warn('Supabase write error:', table, e); });
@@ -1695,12 +1691,48 @@ function SignIn() {
     return refData[listName] ? refData[listName].rows : [];
   }
 
+
+  // Master Terminal derived list (uses local plantCodesFor)
+const filteredParts = parts.filter(function(p){
+  if (archiveMode !== 'all') {
+    var _d = partDecisions[p.id];
+    if (_d && _d.archiveStatus && String(_d.archiveStatus).toLowerCase() === 'archived') return false;
+  }
+  if (archiveMode === 'active' && p.active !== 'ACTIVE') return false;
+  if (archiveMode === 'archived' && !isArchived(p)) return false;
+  if (selOEMs.length > 0 && selOEMs.indexOf(p.oem) < 0) return false;
+  if (selPriorities.length > 0 && selPriorities.indexOf(p.priority) < 0) return false;
+  if (selPlants.length > 0) {
+    var matched = selPlants.some(function(sel){ return plantCodesFor(sel).indexOf(String(p.plant)) >= 0; });
+    if (!matched) return false;
+  }
+  if (eopFilter === 'Missing EOP') {
+    var eop = parseInt(p.serviceEop, 10);
+    if (!isNaN(eop) && String(p.serviceEop).toLowerCase().indexOf('unknown') < 0 && eop > 0) return false;
+  }
+  if (eopFilter === 'Has EOP') {
+    var eop2 = parseInt(p.serviceEop, 10);
+    if (isNaN(eop2) || String(p.serviceEop).toLowerCase().indexOf('unknown') >= 0 || eop2 <= 0) return false;
+  }
+  if (selCategories.length > 0 && selCategories.indexOf(p.component) < 0) return false;
+  if (selSubcategories.length > 0 && selSubcategories.indexOf(p.subcategory) < 0) return false;
+  return true;
+}).slice().sort(function(a, b){
+  if (!sortKey) return 0;
+  var av = a[sortKey], bv = b[sortKey];
+  if (typeof av === 'number' && typeof bv === 'number') return sortDir === 'asc' ? av - bv : bv - av;
+  av = String(av || '').toLowerCase(); bv = String(bv || '').toLowerCase();
+  if (av < bv) return sortDir === 'asc' ? -1 : 1;
+  if (av > bv) return sortDir === 'asc' ? 1 : -1;
+  return 0;
+});
+
   // ── Context value — all shared state/fns for child components ──────────────
   var ctxValue = {
     // Navigation
     page, setPage,
     // Derived data
-    parts,
+    parts, filteredParts,
     // Auth
     authed, setAuthed, currentUser, setCurrentUser, canEdit,
     // Core data
