@@ -55,7 +55,8 @@ function MasterTerminal() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    filteredParts
   } = ctx;
     const bulkActions = [
       { key: 'reactivate', icon: '🔄', label: 'Reactivate Selected', desc: 'Set status to ACTIVE for parts flagged inactive-with-demand. Logged + reversible.', approver: 'Service Lead' },

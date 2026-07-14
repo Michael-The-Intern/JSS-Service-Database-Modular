@@ -54,7 +54,11 @@ function ServiceLifePhase() {
     adminRoles, setAdminRoles, adminModal, setAdminModal,
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
+    marManager, setMarManager, canEdit, currentUser, authed,
+    yearIsPinned,
+    oemKeys,
+    refData,
+    phaseMeta
   } = ctx;
     var phased = parts.map(function(p){ var ph = servicePhase(p); return Object.assign({}, p, { phase: ph.key, yearsLeft: ph.yearsLeft }); });
     var order = ['PHASE 1', 'PHASE 2', 'PHASE 3', 'PHASE 4', 'UNKNOWN AGE'];
