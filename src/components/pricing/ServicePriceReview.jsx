@@ -105,6 +105,22 @@ function ServicePriceReview() {
 
 function PriceBadge(props){ return <span className={'px-2 py-1 rounded-full text-xs border font-medium ' + (toneMap[props.tone] || toneMap.gray)}>{props.children}</span>; }
 
+    
+    var priceCounts = (function(){
+      var c = { noData:0, missingPrice:0, missingCost:0, belowCost:0, belowFloor:0, thin:0, healthy:0, flagged:0 };
+      priceRows.forEach(function(r){
+        if (r.reviewFlag) c.flagged++;
+        var iss = r.pr.issue;
+        if (iss === 'NO PRICE / NO COST') c.noData++;
+        else if (iss === 'MISSING PRICE') c.missingPrice++;
+        else if (iss === 'MISSING COST') c.missingCost++;
+        else if (iss === 'BELOW COST') c.belowCost++;
+        else if (iss === 'BELOW FLOOR') c.belowFloor++;
+        else if (iss === 'THIN MARGIN') c.thin++;
+        else if (iss === 'HEALTHY MARGIN') c.healthy++;
+      });
+      return c;
+    })();
     const filtered = priceRows.filter(function(p){
       if (priceFilter === 'All') return p.pr.issue !== 'HEALTHY MARGIN';
       if (priceFilter === 'Missing Price') return p.pr.issue === 'NO PRICE / NO COST' || p.pr.issue === 'MISSING PRICE';

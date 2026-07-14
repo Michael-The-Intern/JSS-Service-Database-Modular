@@ -53,6 +53,7 @@ function ReportsExports() {
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed, reportCatalog, priceRows
   } = ctx;
+    var handleReportExport = handleExport;
     const oemOptions = ['All', 'STELLANTIS', 'HONDA', 'GM', 'FORD', 'TOYOTA', 'NISSAN', 'SUBARU', 'HYUNDAI/KIA', 'VW', 'BMW', 'TESLA', 'MERCEDES', 'MAZDA'];
     const formats = [
       { id: 'xlsx', label: 'Excel (.xlsx)', icon: '📊', note: 'Full workbook power — pivots & formulas supported.' },
