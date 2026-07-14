@@ -56,7 +56,8 @@ function DataQualityCenter() {
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed,
     refData,
-    CANONICAL_OEMS
+    CANONICAL_OEMS,
+    plantOptions
   } = ctx;
     const dqOemOpts = ((refData['OEM / Customer List'] && refData['OEM / Customer List'].rows.length > 0) ? refData['OEM / Customer List'].rows.map(function(r){ return r[0]; }) : CANONICAL_OEMS).map(function(k){ return { key: k, label: k }; });
     const dqPlantOpts = plantOptions.map(function(p){ return { key: p.code, label: p.acronym + ' — ' + p.displayName + ' · ' + p.commodity }; });
