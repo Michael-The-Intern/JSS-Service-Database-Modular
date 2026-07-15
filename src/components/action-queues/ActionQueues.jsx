@@ -55,7 +55,7 @@ function ActionQueues() {
     yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed,
-    oemKeys
+    oemKeys, priceRows
   } = ctx;
 
     const roles = ['All Roles', 'Admin', 'VP', 'Director / GKAM', 'Manager', 'Read Only'];

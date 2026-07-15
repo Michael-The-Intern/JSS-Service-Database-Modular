@@ -8,6 +8,7 @@ import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
 import { StatCard } from '../shared/StatCard.jsx';
+import { Badge } from '../shared/Badge.jsx';
 
 
 function ServiceLifePhase() {

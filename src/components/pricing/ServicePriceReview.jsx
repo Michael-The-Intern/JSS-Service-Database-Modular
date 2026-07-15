@@ -57,6 +57,7 @@ function ServicePriceReview() {
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed, priceRows, priceReview
   } = ctx;
+  const PRICE_FLOOR_MARGIN = 0.25;
     const [priceEditOpen, setPriceEditOpen] = React.useState(false);
     const [priceEditDraft, setPriceEditDraft] = React.useState({ price: '', cost: '' });
 
