@@ -57,7 +57,7 @@ function MasterTerminal() {
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed,
     filteredParts,
-    oemDropdownOptions, priorityOptions
+    oemDropdownOptions, priorityOptions, plantDropdownOptions, categoryDropdownOptions, subcategoryOptions
   } = ctx;
     const bulkActions = [
       { key: 'reactivate', icon: '🔄', label: 'Reactivate Selected', desc: 'Set status to ACTIVE for parts flagged inactive-with-demand. Logged + reversible.', approver: 'Service Lead' },
