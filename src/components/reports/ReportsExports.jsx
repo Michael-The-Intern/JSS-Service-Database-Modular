@@ -54,6 +54,7 @@ function ReportsExports() {
     eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
     marManager, setMarManager, canEdit, currentUser, authed, reportCatalog, priceRows
   } = ctx;
+  const scheduledExports = [];
     var handleReportExport = handleExport;
     const oemOptions = ['All', 'STELLANTIS', 'HONDA', 'GM', 'FORD', 'TOYOTA', 'NISSAN', 'SUBARU', 'HYUNDAI/KIA', 'VW', 'BMW', 'TESLA', 'MERCEDES', 'MAZDA'];
     const formats = [
