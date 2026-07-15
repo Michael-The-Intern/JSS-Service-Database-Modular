@@ -78,5 +78,7 @@ function ArchiveBadge(props) {
     }
 
 export { Badge };
+export { COLUMN_REGISTRY };
+export { REPORT_COLUMNS };
 export { DQBadge };
 export { ArchiveBadge };
