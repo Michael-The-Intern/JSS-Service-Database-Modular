@@ -41,7 +41,7 @@ function ImportWizard() {
   const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
-    resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
+    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap, normOem, normPlant,
     normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR, familySiblings,
     rateBandFor, evalRateBand, filter, setFilter, oemFilter, setOemFilter,
     plantFilter, setPlantFilter, categoryFilter, setCategoryFilter,
@@ -425,8 +425,8 @@ function ImportWizard() {
             });
             // Serial EOP → Service EOP auto-mapping: if serviceEop is missing but serialEop is present, set serviceEop = serialEop + 15
             if ((!mapped.serviceEop || String(mapped.serviceEop).trim() === '') && mapped.serialEop) {
-              var _serialEopYear = parseInt(String(mapped.serialEop).trim(), 10);
-              if (!isNaN(_serialEopYear) && _serialEopYear > 0) { mapped.serviceEop = String(_serialEopYear + 15); }
+              var _serialEopYear = extractYearFromEop(mapped.serialEop);
+              if (_serialEopYear !== null) { mapped.serviceEop = String(_serialEopYear + 15); }
             }
             newParts.push(mapped);
             newCnt++;

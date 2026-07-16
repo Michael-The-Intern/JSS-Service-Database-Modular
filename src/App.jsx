@@ -569,12 +569,63 @@ function YearSettingsModal() {
     return <React.Fragment><div onClick={close} className="fixed inset-0 bg-black/30 z-40"></div><div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"><div className="p-5 border-b border-gray-200 flex items-start justify-between"><div><div className="text-xs text-gray-500 uppercase tracking-wide">Reference Year</div><h2 className="text-lg font-bold text-gray-900 mt-1">System Setting</h2><p className="text-sm text-gray-500 mt-0.5">Controls the year all service-life phases and rate bands are computed from.</p></div><button onClick={close} className="text-gray-400 hover:text-gray-700 text-xl">×</button></div><div className="flex-1 overflow-auto p-5 space-y-4">{ro && <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2"><span>🔒</span><span>Read-only — you need the <span className="font-semibold">Admin</span> role to change the reference year. You're signed in as <span className="font-semibold">{currentUser.role}</span>.</span></div>}<div className={'rounded-xl border p-4 ' + (!yearIsPinned ? 'border-green-400 bg-green-50' : 'border-gray-200')}><button onClick={function(){ if (!ro) setYearOverride(null); }} disabled={ro} className="w-full text-left flex items-center justify-between"><div><div className="font-semibold text-gray-900 text-sm">Auto (live year)</div><div className="text-xs text-gray-600 mt-0.5">Follows the system clock — rolls forward automatically on Jan 1. Currently {LIVE_YEAR}.</div></div><span className={'w-5 h-5 rounded-full border flex items-center justify-center ' + (!yearIsPinned ? 'border-green-600' : 'border-gray-300')}>{!yearIsPinned && <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>}</span></button></div><div className={'rounded-xl border p-4 ' + (yearIsPinned ? 'border-blue-400 bg-blue-50' : 'border-gray-200')}><div className="flex items-center justify-between"><div><div className="font-semibold text-gray-900 text-sm">Pinned year (back-dated)</div><div className="text-xs text-gray-600 mt-0.5">Freeze the reference year to reproduce a past review or run an audit. Every "as of" stamp reflects this year.</div></div><span className={'w-5 h-5 rounded-full border flex items-center justify-center ' + (yearIsPinned ? 'border-blue-600' : 'border-gray-300')}>{yearIsPinned && <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>}</span></div><select value={yearIsPinned ? yearOverride : ''} disabled={ro} onChange={function(e){ var v = e.target.value; setYearOverride(v === '' ? null : parseInt(v, 10)); }} className="mt-3 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100"><option value="">— Select a year to pin —</option>{years.map(function(y){ return <option key={y} value={y}>{y}{y === LIVE_YEAR ? ' (live)' : ''}</option>; })}</select></div><div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-900"><span className="font-semibold">Effective reference year: {CURRENT_YEAR}</span> {yearIsPinned ? '— pinned. Switch back to Auto to resume rolling forward each January.' : '— auto-rolling with the live clock.'} This change is audit-logged and applies everywhere phases and rate bands are computed.</div></div><div className="p-5 border-t border-gray-200 flex items-center gap-2">{!ro && yearIsPinned && <button onClick={function(){ setYearOverride(null); }} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium">Reset to Auto</button>}<div className="flex-1"></div><button onClick={close} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium">Done</button></div></div></React.Fragment>;
   }
 
+  // ---------- YEAR EXTRACTION HELPER ----------
+  // Safely extracts a calendar year (integer) from any EOP field value,
+  // regardless of whether it arrived as a plain year, ISO date, US date,
+  // Excel serial number, or Date object.  Returns null for anything invalid.
+  function extractYearFromEop(value) {
+    if (value === null || value === undefined || value === '') return null;
+    // Date object (e.g. when cellDates:true is used upstream)
+    if (value instanceof Date) {
+      var dy = value.getFullYear();
+      return (dy > 1900 && dy < 2200) ? dy : null;
+    }
+    var s = String(value).trim();
+    if (!s) return null;
+    var sl = s.toLowerCase();
+    if (sl === 'unknown' || sl === 'n/a' || sl === 'na' || sl === '-') return null;
+    // Plain year: "2008" or "2008.0"
+    if (/^\d{4}(\.\d+)?$/.test(s)) {
+      var py = parseInt(s, 10);
+      return (py > 1900 && py < 2200) ? py : null;
+    }
+    // ISO / YYYY-MM-DD / YYYY/MM/DD — year is the first token
+    var isoM = s.match(/^(\d{4})[-\/]/);
+    if (isoM) {
+      var iy = parseInt(isoM[1], 10);
+      return (iy > 1900 && iy < 2200) ? iy : null;
+    }
+    // US date: M/D/YYYY or MM/DD/YYYY or M-D-YYYY or MM-DD-YYYY
+    var usM = s.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-](\d{4})$/);
+    if (usM) {
+      var uy = parseInt(usM[1], 10);
+      return (uy > 1900 && uy < 2200) ? uy : null;
+    }
+    // Excel serial number: numeric, in plausible date range
+    // 25569 = 1970-01-01, 54787 = 2050-01-01 (approx)
+    var n = parseFloat(s);
+    if (!isNaN(n) && n > 25569 && n < 54787 && s.indexOf('/') < 0 && s.indexOf('-') < 0) {
+      var exd = new Date(Math.round((n - 25569) * 86400 * 1000));
+      var ey = exd.getUTCFullYear();
+      return (ey > 1900 && ey < 2200) ? ey : null;
+    }
+    return null;
+  }
+
   function servicePhase(part) {
-    var eop = parseInt(part.serviceEop, 10);
-    if (isNaN(eop) || String(part.serviceEop).toLowerCase().indexOf('unknown') >= 0) {
+    // Priority: 1) serialEop directly, 2) infer serialEop = serviceEop-15, 3) UNKNOWN AGE
+    var serialEopYear = extractYearFromEop(part.serialEop);
+    var serviceEopYear = extractYearFromEop(part.serviceEop);
+    var yearsSince;
+    if (serialEopYear !== null) {
+      // Preferred: use serialEop directly
+      yearsSince = CURRENT_YEAR - serialEopYear;
+    } else if (serviceEopYear !== null) {
+      // Fallback: infer serialEop from serviceEop (serviceEop = serialEop + 15)
+      yearsSince = CURRENT_YEAR - (serviceEopYear - 15);
+    } else {
       return { key: 'UNKNOWN AGE', yearsLeft: null };
     }
-    var yearsSince = CURRENT_YEAR - eop; // years since end-of-production
     if (yearsSince < 0) yearsSince = 0;             // future EOP = still in production, treat as Phase 1
     var key;
     if (yearsSince <= 4) key = 'PHASE 1';           // 0-4 years since EOP
@@ -1683,7 +1734,23 @@ function SignIn() {
 
   // ── Supabase write helper ─────────────────────────────────────────────────
   function _supaWrite(table, row) {
-    _supa.from(table).upsert(row).then(function(r){ if(r && r.error) console.warn('Supabase write error:', table, r.error); }, function(e){ console.warn('Supabase write error:', table, e); });
+    _supa.from(table).upsert(row).then(function(r){
+      if (r && r.error) {
+        var e = r.error;
+        console.warn('[Supabase] write error — table:', table, '| op: upsert');
+        console.warn('  message:', e.message);
+        console.warn('  details:', e.details);
+        console.warn('  hint:', e.hint);
+        console.warn('  code:', e.code);
+        // Log one redacted sample payload (first 5 keys only)
+        var sampleKeys = Object.keys(row).slice(0, 5);
+        var sample = {};
+        sampleKeys.forEach(function(k){ sample[k] = row[k]; });
+        console.warn('  sample payload (first 5 keys):', sample);
+      }
+    }, function(e){
+      console.warn('[Supabase] network/unexpected error — table:', table, e);
+    });
   }
 
   // ── Reference data row helper ─────────────────────────────────────────────
@@ -1759,7 +1826,7 @@ function SignIn() {
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     // Computed parts helpers
-    resolvePart, isArchived, servicePhase, dqFlag, autoMap,
+    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap,
     normOem, normPlant, normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR,
     familySiblings, rateBandFor, evalRateBand,
     // Filters

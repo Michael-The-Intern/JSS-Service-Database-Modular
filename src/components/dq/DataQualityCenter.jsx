@@ -5,7 +5,7 @@ import React from 'react';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
-import { DQBadge } from '../shared/Badge.jsx';
+import { Badge, DQBadge } from '../shared/Badge.jsx';
 import { SearchBox } from '../shared/SearchBox.jsx';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 import { StatCard } from '../shared/StatCard.jsx';

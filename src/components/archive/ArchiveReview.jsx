@@ -1,5 +1,6 @@
 // components/archive/ArchiveReview.jsx
 import React from 'react';
+import * as ReactDOM from 'react-dom';
 import { AppContext } from '../../context/AppContext.jsx';
 import { Badge, ArchiveBadge } from '../shared/Badge.jsx';
 import { ArchiveSubmitModal } from './ArchiveSubmitModal.jsx';
