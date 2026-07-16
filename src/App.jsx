@@ -3,6 +3,7 @@
 // This is the single entry point rendered by src/main.jsx.
 
 import React from 'react';
+import * as XLSX from 'xlsx';
 import { AppContext } from './context/AppContext.jsx';
 import { _supa, PERSIST, savePersistent, loadPersistent } from './lib/supabase.js';
 

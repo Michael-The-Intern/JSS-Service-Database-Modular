@@ -2,6 +2,7 @@
 // Excel Import Wizard — column mapping, preview, and Supabase commit.
 
 import React from 'react';
+import * as XLSX from 'xlsx';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
