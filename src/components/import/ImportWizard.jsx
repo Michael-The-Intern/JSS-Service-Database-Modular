@@ -6,8 +6,17 @@ import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 import * as XLSX from 'xlsx';
 
+function isPlaceholder(s) {
+  if (!s) return true;
+  if (['0', 'N/A', 'NA', 'NONE', 'UNKNOWN', 'TBD', '-'].indexOf(s) >= 0) return true;
+  if (/^0+$/.test(s)) return true;
+  if (/^S0+$/.test(s)) return true;
+  if (s.length <= 1) return true;
+  return false;
+}
 
 function ImportWizard() {
   const ctx = React.useContext(AppContext);
