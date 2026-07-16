@@ -33,6 +33,7 @@ import { NotificationsPanel } from './components/notifications/NotificationsPane
 import { MasterTerminal } from './components/master/MasterTerminal.jsx';
 import { DataQualityCenter } from './components/dq/DataQualityCenter.jsx';
 import { QuickActions } from './components/quickactions/QuickActions.jsx';
+import * as XLSX from 'xlsx';
 
 // ── App code (extracted from monolith) ────────────────────────────────────
 
@@ -568,19 +569,44 @@ function YearSettingsModal() {
     return <React.Fragment><div onClick={close} className="fixed inset-0 bg-black/30 z-40"></div><div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"><div className="p-5 border-b border-gray-200 flex items-start justify-between"><div><div className="text-xs text-gray-500 uppercase tracking-wide">Reference Year</div><h2 className="text-lg font-bold text-gray-900 mt-1">System Setting</h2><p className="text-sm text-gray-500 mt-0.5">Controls the year all service-life phases and rate bands are computed from.</p></div><button onClick={close} className="text-gray-400 hover:text-gray-700 text-xl">×</button></div><div className="flex-1 overflow-auto p-5 space-y-4">{ro && <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2"><span>🔒</span><span>Read-only — you need the <span className="font-semibold">Admin</span> role to change the reference year. You're signed in as <span className="font-semibold">{currentUser.role}</span>.</span></div>}<div className={'rounded-xl border p-4 ' + (!yearIsPinned ? 'border-green-400 bg-green-50' : 'border-gray-200')}><button onClick={function(){ if (!ro) setYearOverride(null); }} disabled={ro} className="w-full text-left flex items-center justify-between"><div><div className="font-semibold text-gray-900 text-sm">Auto (live year)</div><div className="text-xs text-gray-600 mt-0.5">Follows the system clock — rolls forward automatically on Jan 1. Currently {LIVE_YEAR}.</div></div><span className={'w-5 h-5 rounded-full border flex items-center justify-center ' + (!yearIsPinned ? 'border-green-600' : 'border-gray-300')}>{!yearIsPinned && <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>}</span></button></div><div className={'rounded-xl border p-4 ' + (yearIsPinned ? 'border-blue-400 bg-blue-50' : 'border-gray-200')}><div className="flex items-center justify-between"><div><div className="font-semibold text-gray-900 text-sm">Pinned year (back-dated)</div><div className="text-xs text-gray-600 mt-0.5">Freeze the reference year to reproduce a past review or run an audit. Every "as of" stamp reflects this year.</div></div><span className={'w-5 h-5 rounded-full border flex items-center justify-center ' + (yearIsPinned ? 'border-blue-600' : 'border-gray-300')}>{yearIsPinned && <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>}</span></div><select value={yearIsPinned ? yearOverride : ''} disabled={ro} onChange={function(e){ var v = e.target.value; setYearOverride(v === '' ? null : parseInt(v, 10)); }} className="mt-3 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100"><option value="">— Select a year to pin —</option>{years.map(function(y){ return <option key={y} value={y}>{y}{y === LIVE_YEAR ? ' (live)' : ''}</option>; })}</select></div><div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-900"><span className="font-semibold">Effective reference year: {CURRENT_YEAR}</span> {yearIsPinned ? '— pinned. Switch back to Auto to resume rolling forward each January.' : '— auto-rolling with the live clock.'} This change is audit-logged and applies everywhere phases and rate bands are computed.</div></div><div className="p-5 border-t border-gray-200 flex items-center gap-2">{!ro && yearIsPinned && <button onClick={function(){ setYearOverride(null); }} className="bg-gray-100 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium">Reset to Auto</button>}<div className="flex-1"></div><button onClick={close} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium">Done</button></div></div></React.Fragment>;
   }
 
-  function servicePhase(part) {
-    var eop = parseInt(part.serviceEop, 10);
-    if (isNaN(eop) || String(part.serviceEop).toLowerCase().indexOf('unknown') >= 0) {
-      return { key: 'UNKNOWN AGE', yearsLeft: null };
+  function extractYearFromEop(value) {
+    if (value === null || value === undefined) return null;
+    if (value instanceof Date) return value.getFullYear();
+    var s = String(value).trim();
+    if (!s || /^(unknown|n\/a|na|-)$/i.test(s)) return null;
+    // Pure 4-digit year or float like "2008.0"
+    var plain = parseFloat(s);
+    if (!isNaN(plain) && plain >= 1900 && plain <= 2200) return Math.floor(plain);
+    // ISO / dash-separated: 2008-01-01
+    var isoM = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (isoM) return parseInt(isoM[1], 10);
+    // US date: 1/1/2008 or 12/31/2008 (month/day/year)
+    var usM = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (usM) return parseInt(usM[3], 10);
+    // Excel serial date (number > 2200 treated as serial)
+    var serial = parseInt(s, 10);
+    if (!isNaN(serial) && serial > 2200) {
+      var d = new Date(Math.round((serial - 25569) * 86400 * 1000));
+      return d.getFullYear();
     }
-    var yearsSince = CURRENT_YEAR - eop; // years since end-of-production
-    if (yearsSince < 0) yearsSince = 0;             // future EOP = still in production, treat as Phase 1
+    return null;
+  }
+  function servicePhase(part) {
+    // Prefer serialEop; else infer from serviceEop - 15
+    var eop = extractYearFromEop(part.serialEop);
+    if (eop === null) {
+      var svcEop = extractYearFromEop(part.serviceEop);
+      if (svcEop !== null) eop = svcEop - 15;
+    }
+    if (eop === null || isNaN(eop)) return { key: 'UNKNOWN AGE', yearsLeft: null };
+    var yearsSince = CURRENT_YEAR - eop;
+    if (yearsSince < 0) yearsSince = 0;
     var key;
-    if (yearsSince <= 4) key = 'PHASE 1';           // 0-4 years since EOP
-    else if (yearsSince <= 9) key = 'PHASE 2';      // 5-9
-    else if (yearsSince <= 14) key = 'PHASE 3';     // 10-14
-    else key = 'PHASE 4';                            // 15+
-    var yearsLeft = 15 - yearsSince;                // years until 15-year archive cutoffis also a long-tail / review bucket
+    if (yearsSince <= 4) key = 'PHASE 1';
+    else if (yearsSince <= 9) key = 'PHASE 2';
+    else if (yearsSince <= 14) key = 'PHASE 3';
+    else key = 'PHASE 4';
+    var yearsLeft = 15 - yearsSince;
     return { key: key, yearsLeft: yearsLeft };
   }
 
@@ -1778,7 +1804,7 @@ function SignIn() {
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     // Computed parts helpers
-    resolvePart, isArchived, servicePhase, dqFlag, autoMap,
+    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap,
     normOem, normPlant, normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR,
     familySiblings, rateBandFor, evalRateBand,
     // Filters

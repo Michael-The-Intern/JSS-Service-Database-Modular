@@ -6,6 +6,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
+import * as XLSX from 'xlsx';
 
 
 function ImportWizard() {
@@ -32,7 +33,7 @@ function ImportWizard() {
     importBulkStatus, setImportBulkStatus, importGlobalOEM, setImportGlobalOEM,
     importGlobalPlant, setImportGlobalPlant, importAckNoCust, setImportAckNoCust,
     importSavedProfiles, setImportSavedProfiles, importWorkbookBuf,
-    handleUploadClick, handleFileChosen, queueTasks, setQueueTasks,
+    handleUploadClick, handleFileChosen, extractYearFromEop, queueTasks, setQueueTasks,
     customTasks, setCustomTasks, taskActions, setTaskActions, taskAudit, setTaskAudit,
     queueOem, setQueueOem, queueStatus, setQueueStatus, dismissFor, setDismissFor,
     reassignFor, setReassignFor, selectedTask, setSelectedTask,
@@ -401,8 +402,8 @@ function ImportWizard() {
             });
             // Serial EOP → Service EOP auto-mapping: if serviceEop is missing but serialEop is present, set serviceEop = serialEop + 15
             if ((!mapped.serviceEop || String(mapped.serviceEop).trim() === '') && mapped.serialEop) {
-              var _serialEopYear = parseInt(String(mapped.serialEop).trim(), 10);
-              if (!isNaN(_serialEopYear) && _serialEopYear > 0) { mapped.serviceEop = String(_serialEopYear + 15); }
+              var _serialEopYear = extractYearFromEop(mapped.serialEop);
+              if (_serialEopYear !== null && _serialEopYear > 0) { mapped.serviceEop = String(_serialEopYear + 15); }
             }
             newParts.push(mapped);
             newCnt++;
