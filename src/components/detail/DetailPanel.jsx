@@ -1,60 +1,23 @@
-// components/detail/DetailPanel.jsx
-// Slide-in part detail panel — shows full part record with edit capability.
+// src/components/detail/DetailPanel.jsx
+// Detail panel — shows selected part info, edit sections, EOP management.
+// Extracted from monolithic index.html — parity target.
+//
+// FIX: Added missing import for Badge and DQBadge from ../shared/Badge.jsx
+// This resolves: ReferenceError: DQBadge is not defined (DetailPanel.jsx:78)
 
 import React from 'react';
 import { AppContext } from '../../context/AppContext.jsx';
+import { Badge, DQBadge } from '../shared/Badge.jsx';
 
-import { _supa } from '../../lib/supabase.js';
-import { Badge } from '../shared/Badge.jsx';
-import { PriceInput } from '../shared/PriceInput.jsx';
-
-
-function DetailPanel(props) {
+export function DetailPanel(props) {
   const ctx = React.useContext(AppContext);
-  const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
-    partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
-    manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
-    resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
-    normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR, familySiblings,
-    rateBandFor, evalRateBand, filter, setFilter, oemFilter, setOemFilter,
-    plantFilter, setPlantFilter, categoryFilter, setCategoryFilter,
-    sortKey, setSortKey, sortDir, setSortDir, selOEMs, setSelOEMs,
-    selPriorities, setSelPriorities, selPlants, setSelPlants,
-    selCategories, setSelCategories, selSubcategories, setSelSubcategories,
-    phaseFilter, setPhaseFilter, oemPhaseFilter, setOemPhaseFilter,
-    eopFilter, setEopFilter, archiveMode, setArchiveMode,
-    dqSelOEMs, setDqSelOEMs, dqSelIdentifiers, setDqSelIdentifiers,
-    dqSelPlants, setDqSelPlants, dqSelCategories, setDqSelCategories,
-    dqFlagFilter, setDqFlagFilter, selectedPart, setSelectedPart, onOpenDetail,
-    sourceHistoryFor, setSourceHistoryFor, importStep, setImportStep,
-    importFile, setImportFile, importMaps, setImportMaps, importSheets, setImportSheets,
-    importSelectedSheets, setImportSelectedSheets, importRowFilters, setImportRowFilters,
-    importAiReview, setImportAiReview, importResult, setImportResult,
-    importBulkStatus, setImportBulkStatus, importGlobalOEM, setImportGlobalOEM,
-    importGlobalPlant, setImportGlobalPlant, importAckNoCust, setImportAckNoCust,
-    importSavedProfiles, setImportSavedProfiles, importWorkbookBuf,
-    handleUploadClick, handleFileChosen, queueTasks, setQueueTasks,
-    customTasks, setCustomTasks, taskActions, setTaskActions, taskAudit, setTaskAudit,
-    queueOem, setQueueOem, queueStatus, setQueueStatus, dismissFor, setDismissFor,
-    reassignFor, setReassignFor, selectedTask, setSelectedTask,
-    auditAction, setAuditAction, auditModule, setAuditModule,
-    auditUser, setAuditUser, auditSearch, setAuditSearch, selectedAudit, setSelectedAudit,
-    archiveAudit, setArchiveAudit, priceFilter, setPriceFilter,
-    selectedPrice, setSelectedPrice, priceProposal, setPriceProposal,
-    priceHistoryFor, setPriceHistoryFor, selectedReport, setSelectedReport,
-    exportFormat, setExportFormat, excelStructure, setExcelStructure,
-    reportOem, setReportOem, exportTerminalParts, setExportTerminalParts, handleExport,
-    mtSelectMode, setMtSelectMode, mtSelectedIds, setMtSelectedIds,
-    bulkOpen, setBulkOpen, bulkAction, setBulkAction, refList, setRefList,
-    refSearch, setRefSearch, refOverrides, setRefOverrides, refModal, setRefModal,
-    notifications, setNotifications, notifOpen, setNotifOpen,
-    teamEvents, setTeamEvents, calYear, setCalYear, calMonth, setCalMonth,
-    selectedEventDate, setSelectedEventDate, eventModal, setEventModal, MONTH_NAMES,
-    adminRoles, setAdminRoles, adminModal, setAdminModal,
-    yearOverride, setYearOverride, yearSettingsOpen, setYearSettingsOpen,
-    eopToast, setEopToast, actionModal, setActionModal, scrollRef, fileInputRef,
-    marManager, setMarManager, canEdit, currentUser, authed
-  } = ctx; var dpMode = (props && props.mode) || 'drawer';
+  const {
+    selectedPart, setSelectedPart,
+    familySiblings, _supaWrite,
+    setRawParts, setRawAudit,
+    currentUser,
+  } = ctx;
+ var dpMode = (props && props.mode) || 'drawer';
     if (!selectedPart) return null;
     const p = selectedPart;
     const siblings = familySiblings(p);
@@ -79,6 +42,4 @@ function DetailPanel(props) {
     {eopConfirm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"><div className="bg-white rounded-2xl shadow-2xl p-6 w-80 text-center"><div className="text-2xl mb-2">📅</div><div className="font-bold text-gray-900 text-base mb-1">Confirm EOP Edit</div><p className="text-sm text-gray-600 mb-4">Set Service EOP for <span className="font-semibold">{eopConfirm.partName}</span> to <span className="font-semibold">{eopConfirm.value}</span>?<br /><span className="text-xs text-gray-400">This change will be logged to Audit History.</span></p><div className="flex gap-3 justify-center"><button onClick={function(){ setRawParts(function(prev){ return prev.map(function(pt){ return pt.id === eopConfirm.id ? Object.assign({}, pt, { serviceEop: eopConfirm.value }) : pt; }); }); setEopEditId(null); setEopEditValue(''); setEopConfirm(null); }} className="bg-blue-600 text-white rounded-lg px-5 py-2 text-sm font-semibold">Yes, Confirm</button><button onClick={function(){ setEopConfirm(null); }} className="bg-gray-100 text-gray-700 rounded-lg px-5 py-2 text-sm font-medium">No, Cancel</button></div></div></div>}
     {panelSaveConfirm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"><div className="bg-white rounded-2xl shadow-2xl p-6 w-96 text-center"><div className="text-2xl mb-2">💾</div><div className="font-bold text-gray-900 text-base mb-1">Confirm Edit</div><p className="text-sm text-gray-600 mb-4">Save changes to <span className="font-semibold">JSS {panelSaveConfirm.partName}</span>?<br /><span className="text-xs text-gray-400">This will update the part across all pages and log to Audit History.</span></p><div className="flex gap-3 justify-center"><button onClick={function(){ var d = panelSaveConfirm.draft; var sec = panelSaveConfirm.section; var fields = sec === 'pricing' ? { price: d.price, cost: d.cost, baseCost: d.baseCost } : sec === 'demand' ? { demand: d.demand, backlog: d.backlog, owner: d.owner } : sec === 'lifecycle' ? { active: d.active, serviceEop: d.serviceEop, recommendation: d.recommendation } : sec === 'classification' ? { phase: d.phase, plant: d.plant, oem: d.oem } : d; setRawParts(function(prev){ return prev.map(function(pt){ return pt.id === panelSaveConfirm.id ? Object.assign({}, pt, fields) : pt; }); }); var ts = new Date().toISOString(); var fieldDesc = Object.keys(fields).map(function(k){ return k + ': ' + fields[k]; }).join(', '); _supaWrite('parts', Object.assign({ id: panelSaveConfirm.id }, fields)); setRawAudit(function(prev){ var _ae = { id: 'ED-' + Date.now(), ts: ts, user: currentUser.name, role: currentUser.role || 'Manager', action: 'FIELD EDIT', module: 'Master Terminal', target: 'JSS ' + panelSaveConfirm.partName, before: '(previous values)', after: fieldDesc, reversible: true, note: 'Manual edit via side panel — ' + sec + ' section.', live: true }; _supaWrite('audit_log', _ae); return [_ae].concat(prev); }); setPanelSaveConfirm(null); setPanelEditSection(null); setPanelEditDraft({}); }} className="bg-blue-600 text-white rounded-lg px-5 py-2 text-sm font-semibold">Yes, Save</button><button onClick={function(){ setPanelSaveConfirm(null); }} className="bg-gray-100 text-gray-700 rounded-lg px-5 py-2 text-sm font-medium">Cancel</button></div></div></div>}
     </React.Fragment>;
-  }
-
-export { DetailPanel };
+}

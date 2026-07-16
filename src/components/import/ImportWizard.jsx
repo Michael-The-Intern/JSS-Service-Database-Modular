@@ -2,46 +2,18 @@
 // Excel Import Wizard — column mapping, preview, and Supabase commit.
 
 import React from 'react';
-import * as XLSX from 'xlsx';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 
 
-// Copied from monolithic index.html — metric summary card used in Import Wizard preview step.
-function StatCard(props) {
-  const isZero = props.value === '0' || props.value === 0;
-  const borderColor = isZero ? '#e5e7eb' : props.tone === 'red' ? '#dc2626' : props.tone === 'orange' ? '#ea580c' : props.tone === 'green' ? '#16a34a' : props.tone === 'indigo' ? '#4f46e5' : props.tone === 'blue' ? '#2563eb' : '#6b7280';
-  const numColor = isZero ? '#9ca3af' : '#111827';
-  return (
-    <div style={{borderTop: '3px solid ' + borderColor, boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)', transition: 'box-shadow 0.15s ease, transform 0.15s ease'}}
-      className="bg-white rounded-xl border border-gray-200 p-4 cursor-default"
-      onMouseEnter={function(e){ e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform='translateY(-1px)'; }}
-      onMouseLeave={function(e){ e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)'; e.currentTarget.style.transform='translateY(0)'; }}>
-      <div style={{fontSize:'10px', letterSpacing:'0.12em', color: isZero ? '#d1d5db' : '#9ca3af'}} className="uppercase font-medium mb-1">{props.title}</div>
-      <div style={{fontSize:'2.25rem', fontWeight:'600', lineHeight:'1', letterSpacing:'-0.01em', color: numColor}}>{props.value}</div>
-      <div style={{fontSize:'12px', color: isZero ? '#d1d5db' : '#6b7280'}} className="mt-1">{props.subtitle}</div>
-    </div>
-  );
-}
-
-// Copied from monolithic index.html — used by Import Wizard mapping/validation logic.
-function isPlaceholder(s) {
-  if (!s) return true;
-  if (['0', 'N/A', 'NA', 'NONE', 'UNKNOWN', 'TBD', '-'].indexOf(s) >= 0) return true;
-  if (/^0+$/.test(s)) return true;
-  if (/^S0+$/.test(s)) return true;
-  if (s.length <= 1) return true;
-  return false;
-}
-
 function ImportWizard() {
   const ctx = React.useContext(AppContext);
   const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
-    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap, normOem, normPlant,
+    resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
     normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR, familySiblings,
     rateBandFor, evalRateBand, filter, setFilter, oemFilter, setOemFilter,
     plantFilter, setPlantFilter, categoryFilter, setCategoryFilter,
@@ -100,7 +72,11 @@ function ImportWizard() {
 
     // STEP 0 — choose a file
     if (importStep === 0 || !importFile) {
-      return <div className="space-y-6">{header}{stepper}<div className="bg-white rounded-xl border border-gray-200 p-6"><div onClick={handleUploadClick} onDragOver={function(e){ e.preventDefault(); }} onDrop={function(e){ e.preventDefault(); if(e.dataTransfer.files && e.dataTransfer.files[0]){ handleFileChosen({ target: { files: e.dataTransfer.files } }); } }} className="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center bg-blue-50 cursor-pointer hover:bg-blue-100 hover:border-blue-400 transition-colors"><div className="text-3xl mb-2">📄</div><div className="font-bold text-gray-900">Drop an Excel / CSV file here</div><div className="text-sm text-gray-500">Drag and drop your file above, or click the drop zone to browse for a file.</div></div></div></div>;
+      return <div className="space-y-6">{header}{stepper}<div className="bg-white rounded-xl border border-gray-200 p-6"><div onClick={handleUploadClick} onDragOver={function(e){ e.preventDefault(); }} onDrop={function(e){ e.preventDefault(); if(e.dataTransfer.files && e.dataTransfer.files[0]){ handleFileChosen({ target: { files: e.dataTransfer.files } }); } }} className="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center bg-blue-50 cursor-pointer hover:bg-blue-100 hover:border-blue-400 transition-colors"><div className="text-3xl mb-2">📄</div><div className="font-bold text-gray-900">Drop an Excel / CSV file here</div><div className="text-sm text-gray-500">Drag and drop your file above, or click the drop zone to browse for a file.</div></div>{(function(){
+          var recentImps = (rawAudit||[]).filter(function(a){ return a.action === 'IMPORT COMMIT'; }).slice(0,5);
+          if (!recentImps.length) return <div className="bg-white rounded-xl border border-gray-200 p-5"><h2 className="font-bold text-gray-900 mb-3">Recent Imports</h2><div className="text-sm text-gray-400 py-3">No recent imports yet.</div></div>;
+          return <div className="bg-white rounded-xl border border-gray-200 p-5"><h2 className="font-bold text-gray-900 mb-3">Recent Imports</h2><div className="space-y-2">{recentImps.map(function(a){ return <div key={a.id} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-2"><div><div className="text-sm font-medium text-gray-800">{a.target || 'Import'}</div><div className="text-xs text-gray-400">{a.detail || ''}</div></div><div className="text-xs text-gray-400 whitespace-nowrap ml-4">{a.ts ? new Date(a.ts).toLocaleDateString() : '—'} · {a.user || '—'}</div></div>; })}</div></div>;
+        })()}</div></div>;
     }
 
     var f = importFile;
@@ -425,14 +401,20 @@ function ImportWizard() {
             });
             // Serial EOP → Service EOP auto-mapping: if serviceEop is missing but serialEop is present, set serviceEop = serialEop + 15
             if ((!mapped.serviceEop || String(mapped.serviceEop).trim() === '') && mapped.serialEop) {
-              var _serialEopYear = extractYearFromEop(mapped.serialEop);
-              if (_serialEopYear !== null) { mapped.serviceEop = String(_serialEopYear + 15); }
+              var _serialEopYear = parseInt(String(mapped.serialEop).trim(), 10);
+              if (!isNaN(_serialEopYear) && _serialEopYear > 0) { mapped.serviceEop = String(_serialEopYear + 15); }
             }
             newParts.push(mapped);
             newCnt++;
           }
         });
         setRawParts(newParts);newParts.forEach(function(pt){ _supaWrite('parts', pt); });
+        var auditRec = { id: 'IMP-' + Date.now(), action: 'IMPORT COMMIT', target: f.name,
+          user: currentUser ? (currentUser.name || currentUser.email || 'Unknown') : 'Unknown',
+          ts: new Date().toISOString(),
+          detail: newCnt + ' new, ' + updCnt + ' updated, ' + flagCnt + ' flagged' };
+        _supaWrite('audit_log', auditRec);
+        setRawAudit(function(prev){ return [auditRec].concat(prev || []); });
         setImportResult({ newCnt: newCnt, updCnt: updCnt, flagCnt: flagCnt, fileName: f.name });
         setImportStep(5);
         } catch(err) {
