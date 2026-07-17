@@ -33,6 +33,7 @@ import { NotificationsPanel } from './components/notifications/NotificationsPane
 import { MasterTerminal } from './components/master/MasterTerminal.jsx';
 import { DataQualityCenter } from './components/dq/DataQualityCenter.jsx';
 import { QuickActions } from './components/quickactions/QuickActions.jsx';
+import { ExportTerminal } from './components/export/ExportTerminal.jsx';
 import * as XLSX from 'xlsx';
 
 // ── App code (extracted from monolith) ────────────────────────────────────
@@ -1711,20 +1712,33 @@ function SignIn() {
   // altJss is confirmed absent from the DB schema (PGRST204). It lives in SAFE_DEFAULTS
   // for UI rendering but must not be sent to Supabase. Only altJss is stripped here;
   // do not strip other fields until their schema status is confirmed.
-  var PARTS_DB_STRIP = ['altJss'];
+  var PARTS_DB_STRIP = ['altJss', 'category', 'productCategory'];
   function sanitizePartForSupabase(row) {
     var out = Object.assign({}, row); // shallow copy — does NOT mutate original
     PARTS_DB_STRIP.forEach(function(k) { delete out[k]; });
     return out;
   }
 
+  // Strip the top-level 'detail' column from audit_log payloads.
+  // Supabase error: "Could not find the 'detail' column of 'audit_log' in the schema cache"
+  // rawAudit local state is NOT affected — only the Supabase payload is sanitized.
+  var AUDIT_LOG_STRIP = ['detail'];
+  function sanitizeAuditLogForSupabase(row) {
+    var out = Object.assign({}, row);
+    AUDIT_LOG_STRIP.forEach(function(k) { delete out[k]; });
+    return out;
+  }
+
   function _supaWrite(table, row) {
-    var payload = (table === 'parts') ? sanitizePartForSupabase(row) : row;
+    var payload = (table === 'parts')
+      ? sanitizePartForSupabase(row)
+      : (table === 'audit_log')
+        ? sanitizeAuditLogForSupabase(row)
+        : row;
     _supa.from(table).upsert(payload).then(function(r){
       if (r && r.error) {
         console.warn('[Supabase] write error — table:', table, '| code:', r.error.code);
         console.warn('  message:', r.error.message);
-        // Sample sanitized payload (first 6 keys) so we can verify altJss is absent
         var sample = {}; Object.keys(payload).slice(0, 6).forEach(function(k){ sample[k] = payload[k]; });
         console.warn('  sanitized payload sample:', sample);
       }
