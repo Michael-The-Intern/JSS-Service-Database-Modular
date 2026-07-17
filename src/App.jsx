@@ -1401,7 +1401,7 @@ function SimplePage(props) {
         };
     });
     setQueueTasks(function(prev){ var next = prev.concat(newQueueTasks); return next; });
-    newQueueTasks.forEach(function(t){ _supa.from('tasks').insert(t); });
+    newQueueTasks.forEach(function(t){ _supa.from('tasks').insert(sanitizeTaskForSupabase(t)); }); // strip ageDays (PGRST204)
     // === END NEW ===
 
     setSelectedArchiveIds([]);
@@ -1712,7 +1712,7 @@ function SignIn() {
   // altJss is confirmed absent from the DB schema (PGRST204). It lives in SAFE_DEFAULTS
   // for UI rendering but must not be sent to Supabase. Only altJss is stripped here;
   // do not strip other fields until their schema status is confirmed.
-  var PARTS_DB_STRIP = ['altJss', 'category', 'productCategory'];
+  var PARTS_DB_STRIP = ['altJss', 'category', 'productCategory', 'desc']; // 'desc' not in Supabase schema (PGRST204)
   function sanitizePartForSupabase(row) {
     var out = Object.assign({}, row); // shallow copy — does NOT mutate original
     PARTS_DB_STRIP.forEach(function(k) { delete out[k]; });
@@ -1729,12 +1729,22 @@ function SignIn() {
     return out;
   }
 
+  // Strip frontend-computed fields not in Supabase tasks schema (ageDays: PGRST204 confirmed).
+  var TASKS_DB_STRIP = ['ageDays'];
+  function sanitizeTaskForSupabase(row) {
+    var out = Object.assign({}, row);
+    TASKS_DB_STRIP.forEach(function(k) { delete out[k]; });
+    return out;
+  }
+
   function _supaWrite(table, row) {
     var payload = (table === 'parts')
       ? sanitizePartForSupabase(row)
       : (table === 'audit_log')
         ? sanitizeAuditLogForSupabase(row)
-        : row;
+        : (table === 'tasks')
+          ? sanitizeTaskForSupabase(row)
+          : row;
     _supa.from(table).upsert(payload).then(function(r){
       if (r && r.error) {
         console.warn('[Supabase] write error — table:', table, '| code:', r.error.code);

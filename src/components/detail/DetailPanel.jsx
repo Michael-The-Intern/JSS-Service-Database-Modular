@@ -16,6 +16,7 @@ export function DetailPanel(props) {
     familySiblings, _supaWrite,
     setRawParts, setRawAudit,
     currentUser,
+    canEdit,
   } = ctx;
  var dpMode = (props && props.mode) || 'drawer';
     if (!selectedPart) return null;
