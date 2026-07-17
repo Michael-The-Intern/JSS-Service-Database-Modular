@@ -7,6 +7,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
+import { StatCard } from '../shared/StatCard.jsx';
 
 
 
