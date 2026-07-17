@@ -9,6 +9,19 @@ import { _supa } from '../../lib/supabase.js';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown.jsx';
 
 
+
+// ---------------------------------------------------------------------------
+// isPlaceholder — flags serial/cust values that carry no real data
+// ---------------------------------------------------------------------------
+function isPlaceholder(s) {
+  if (!s) return true;
+  if (['0', 'N/A', 'NA', 'NONE', 'UNKNOWN', 'TBD', '-'].indexOf(String(s).toUpperCase().trim()) >= 0) return true;
+  if (/^0+$/.test(String(s))) return true;
+  if (/^S0+$/i.test(String(s))) return true;
+  if (String(s).length <= 1) return true;
+  return false;
+}
+
 function ImportWizard() {
   const ctx = React.useContext(AppContext);
   const { page, setPage, parts, rawParts, setRawParts, rawAudit, setRawAudit, _supaWrite,
