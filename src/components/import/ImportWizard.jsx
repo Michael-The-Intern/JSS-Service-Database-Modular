@@ -335,7 +335,7 @@ function ImportWizard() {
         else if (aiFlags.some(function(f){ return f.type === 'flag'; })) badge = <span title={aiFlags.map(function(f){ return f.msg; }).join(' | ')} className="cursor-help px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">🟡 Flag</span>;
         else badge = <span title={aiFlags.map(function(f){ return f.msg; }).join(' | ')} className="cursor-help px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">🔵 Note</span>;
         return <tr key={ri} className="border-t border-gray-100"><td className="p-3"><div className="flex flex-col gap-1">{badge}{aiFlags.map(function(f, fi){ return <div key={fi} className="text-xs text-gray-500 max-w-xs">{f.msg}</div>; })}</div></td>{previewCols.map(function(h, ci){ return <td key={ci} className="p-3 text-xs">{String(row[h] !== undefined ? row[h] : '')}</td>; })}</tr>;
-      })}</tbody></table></div></div><div className="flex justify-between items-center"><button onClick={function(){ setImportStep(3); }} className="bg-gray-100 text-gray-700 rounded-lg px-5 py-2 font-medium">&larr; Back</button><button onClick={function(){
+      })}</tbody></table></div></div><div className="flex justify-between items-center"><button onClick={function(){ setImportStep(3); }} className="bg-gray-100 text-gray-700 rounded-lg px-5 py-2 font-medium">&larr; Back</button><button onClick={async function(){
         try {
         // COMMIT: build new part rows + update matched ones
         var custH2 = null, jssH2 = null;
@@ -421,9 +421,26 @@ function ImportWizard() {
             newCnt++;
           }
         });
-        setRawParts(newParts);newParts.forEach(function(pt){ _supaWrite('parts', pt); });
+        // PATCH C (v14): await all parts writes; gate audit_log + setImportStep(5) on confirmed DB success
+        var writeResults = await Promise.allSettled(newParts.map(function(pt){ return _supaWrite('parts', pt); }));
+        var failures = writeResults.filter(function(r){
+          return r.status === 'rejected' || (r.value && r.value.error);
+        });
+        if (failures.length > 0) {
+          var firstErr = failures[0].reason || (failures[0].value && failures[0].value.error);
+          var errMsg = (firstErr && firstErr.message) ? firstErr.message : JSON.stringify(firstErr);
+          console.error('[ImportWizard] Parts write failures (' + failures.length + '):', failures);
+          alert('Import failed: ' + failures.length + ' part(s) could not be saved to the database.\n\n' + errMsg + '\n\nNo changes were committed. Check browser console for details.');
+          return;
+        }
+        // All parts confirmed written — now update local state
+        setRawParts(newParts);
         var auditRec = { id: 'IMP-' + Date.now(), action: 'IMPORT COMMIT', target: f.name, user: currentUser ? (currentUser.name || currentUser.email || 'Unknown') : 'Unknown', ts: new Date().toISOString(), detail: newCnt + ' new, ' + updCnt + ' updated, ' + flagCnt + ' flagged' };
-        _supaWrite('audit_log', auditRec);
+        var auditResult = await _supaWrite('audit_log', auditRec);
+        if (auditResult && auditResult.error) {
+          console.warn('[ImportWizard] Audit log write failed:', auditResult.error);
+          alert('Parts were saved but the audit log entry could not be written.\n\n' + (auditResult.error.message || JSON.stringify(auditResult.error)));
+        }
         setRawAudit(function(prev){ return [auditRec].concat(prev || []); });
         setImportResult({ newCnt: newCnt, updCnt: updCnt, flagCnt: flagCnt, fileName: f.name });
         setImportStep(5);
