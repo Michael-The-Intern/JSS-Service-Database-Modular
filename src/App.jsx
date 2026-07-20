@@ -1,4 +1,3 @@
-// rollback marker: App.jsx restored from commit add3395
 // src/App.jsx
 // Root application component — routing, auth, sidebar, global modals.
 // This is the single entry point rendered by src/main.jsx.
@@ -318,7 +317,7 @@ function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisio
 
   // ── Supabase bootstrap: load all tables on mount ─────────────────
   React.useEffect(function() {
-    _supa.from('parts').select('*').then(function(pRes){ if (pRes.data && pRes.data.length > 0) setRawParts(pRes.data); }, function(e){ console.warn('Supabase parts load error:', e); });
+    _supa.from('parts').select('*').then(function(pRes){ if (pRes.data && pRes.data.length > 0) setRawParts(pRes.data.map(function(r){ return Object.assign({}, r, { desc: r.desc || r.part_desc || '' }); })); }, function(e){ console.warn('Supabase parts load error:', e); });
 
     _supa.from('audit_log').select('*').order('ts', { ascending: false }).then(function(aRes){
       if (aRes.data && aRes.data.length > 0) setRawAudit(aRes.data);
@@ -1630,15 +1629,46 @@ function SignIn() {
   // PATCH B (v14): explicit allowlist — only confirmed public.parts schema columns sent
   // Strip-list approach removed: unknown frontend-only fields can no longer leak through.
   function sanitizePartForSupabase(row) {
+    // v14.1 Persistence Parity: explicit allowlist expanded.
+    // ONLY fields listed here are written to Supabase.
+    // Do not replace with Object.assign — wildcard writes break the schema.
     var out = {};
+
+    // ── Identity fields (v14 baseline) ────────────────────────────────────────
     out.id           = row.id;
     out.jss          = row.jss          || '';
     out.oem          = row.oem          || '';
     out.plant        = row.plant        || '';
-    out.part_desc    = row.part_desc    || row.desc || '';  // frontend 'desc' → DB 'part_desc'
+    out.part_desc    = row.part_desc    || row.desc || '';   // legacy DB column preserved
+    out['desc']      = row.desc         || row.part_desc || ''; // v14.1 column; quoted in SQL as "desc"
     out.component    = row.component    || '';
     out.customerPart = row.customerPart || '';
     out.active       = row.active       || row.status || 'ACTIVE';
+
+    // ── Operational fields — Master Terminal (v14.1) ──────────────────────────
+    out.priority       = row.priority       || 'Medium';
+    out.demand         = (typeof row.demand  === 'number') ? row.demand  : (parseFloat(row.demand)  || 0);
+    out.backlog        = (typeof row.backlog === 'number') ? row.backlog : (parseFloat(row.backlog) || 0);
+    out.recommendation = row.recommendation || '';
+
+    // ── Pricing/cost fields — Service Price Review, Detail Panel, Reports (v14.1)
+    out.price          = row.price    != null ? String(row.price)    : '';
+    out.cost           = row.cost     != null ? String(row.cost)     : '';
+    out['baseCost']    = row.baseCost != null ? String(row.baseCost) : '';
+
+    // ── Service-life fields — Service Life Phase (v14.1) ─────────────────────
+    out['serviceEop']  = row.serviceEop  || '';
+    out['serialEop']   = row.serialEop   || '';
+    out['serviceSop']  = row.serviceSop  || '';
+    out['serialSop']   = row.serialSop   || '';
+
+    // ── Additional import fields — full round-trip fidelity (v14.1) ───────────
+    out['altJss']      = row.altJss      || '';
+    out.subcategory    = row.subcategory || '';
+    out.type           = row.type        || '';
+    out.program        = row.program     || '';
+    out.owner          = row.owner       || '';
+
     return out;
   }
 
