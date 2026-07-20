@@ -1,3 +1,4 @@
+// rollback marker: App.jsx restored from commit add3395
 // src/App.jsx
 // Root application component — routing, auth, sidebar, global modals.
 // This is the single entry point rendered by src/main.jsx.
