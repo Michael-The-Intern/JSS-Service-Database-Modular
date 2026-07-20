@@ -71,7 +71,7 @@ function App() {
     desc: '',
     active: 'ACTIVE',
     type: '',
-    component: '',
+    component: 'UNASSIGNED',
     subcategory: '',
     program: '',
     price: '',
@@ -310,12 +310,6 @@ function handleExport() {
     out.lastAction = d.lastAction;
     out.lastBy = d.lastBy;
     out.lastAt = d.lastAt;
-    // Phase 1E: read-time component enrichment — no rawParts mutation, no Supabase write
-    var _compVal = String(out.component || '').trim().toLowerCase();
-    if (!out.component || ['', 'unassigned', 'n/a', 'nan', 'none'].indexOf(_compVal) >= 0) {
-      var _clf = classifyPartFromText(out, refData);
-      if (_clf.component) { out.component = _clf.component; out.subcategory = out.subcategory || _clf.subcategory; }
-    }
     return out;
 }
 function isArchived(p){ const d = partDecisions[p.id]; const ad = archiveDecisions[p.id]; if (ad && (ad.status === 'Archived' || ad.status === 'ARCHIVED')) return true; if (d && (d.status === 'ARCHIVED' || d.status === 'Archived')) return true; if (d && d.archiveStatus === 'Archived') return true; if (p.archiveStatus === 'Archived' && !(d && d.archiveStatus && d.archiveStatus !== 'Archived')) return true; return false; }
@@ -987,109 +981,6 @@ const importTargets = importTargetGroups.flatMap(function(g){ return g.fields.ma
   function normOem(p){ return String(p.oem || '').trim() || 'Unknown'; }
   function normPlant(p){ var s = String(p.plant || '').trim(); return (!s || s === '0' || s === 'nan') ? 'Unassigned' : s; }
   function normCategory(p){ var s = String(p.category || p.productCategory || '').trim(); return (!s || s === 'nan') ? 'Unclassified' : s.toUpperCase(); }
-  // ── Phase 1B: classifyPartFromText ───────────────────────────────────────
-  // Pure helper — no state mutations, no Supabase writes.
-  // Hierarchy: (1) 96-Part Classification active rows
-  //            (2) Product Category Aliases
-  //            (3) Built-in abbreviation/token fallback rules
-  function classifyPartFromText(part, refData) {
-    if (!part || !refData) return { component: '', subcategory: '', confidence: 0, reason: 'no input', matchedTokens: [] };
-
-    // Collect all text fields to search
-    var raw = [
-      part.desc, part.part_desc, part.description,
-      part.jss, part.customerPart, part.oem,
-      part.component, part.subcategory
-    ].filter(Boolean).join(' ');
-    var txt = raw.toUpperCase().trim();
-    if (!txt) return { component: '', subcategory: '', confidence: 0, reason: 'empty text', matchedTokens: [] };
-
-    // ── 1. 96-Part Classification active rows ──────────────────────────────
-    var classRows = (refData['96-Part Classification'] && refData['96-Part Classification'].rows) || [];
-    for (var ci = 0; ci < classRows.length; ci++) {
-      var crow = classRows[ci];
-      // col[0]=Active, col[1]=Part Description Pattern, col[2]=Component Family, col[3]=Subcategory
-      if (!crow[0] || String(crow[0]).toUpperCase() !== 'YES') continue;
-      var pattern = crow[1] ? String(crow[1]).toUpperCase().trim() : '';
-      if (pattern && txt.indexOf(pattern) >= 0) {
-        return {
-          component: crow[2] || '',
-          subcategory: crow[3] || '',
-          confidence: 90,
-          reason: '96-Part Classification match: ' + pattern,
-          matchedTokens: [pattern]
-        };
-      }
-    }
-
-    // ── 2. Product Category Aliases ────────────────────────────────────────
-    var aliasRows = (refData['Product Category Aliases'] && refData['Product Category Aliases'].rows) || [];
-    for (var ai = 0; ai < aliasRows.length; ai++) {
-      var arow = aliasRows[ai];
-      // col[0]=Alias, col[1]=Subcategory, col[2]=Component Family
-      var alias = arow[0] ? String(arow[0]).toUpperCase().trim() : '';
-      if (alias && txt.indexOf(alias) >= 0) {
-        return {
-          component: arow[2] || '',
-          subcategory: arow[1] || '',
-          confidence: 85,
-          reason: 'Product Category Alias match: ' + alias,
-          matchedTokens: [alias]
-        };
-      }
-    }
-
-    // ── 3. Built-in token rules (priority order matters) ──────────────────
-    // Token sets — checked in priority order. Higher-specificity tokens win.
-    var TOKEN_RULES = [
-      // MGG — most specific, must beat generic AB/airbag
-      { component: 'MGG', subcategory: 'Micro Gas Generator',
-        tokens: ['MGG','MICRO GAS GENERATOR','GAS GENERATOR','GAS GEN','GASGEN','INITIATOR','SQUIB','PYRO','FIRING LEAD','WIRE HARN','WIRING HARNESS'] },
-      // BUCKLES — specific enough to beat generic BELT
-      { component: 'BUCKLES', subcategory: 'Seatbelt Buckle',
-        tokens: ['BUCKLE','BKL','BCKL','LATCH','TONGUE','ANCHOR BUCKLE'] },
-      // RETRACTORS
-      { component: 'RETRACTORS', subcategory: 'Seatbelt Retractor',
-        tokens: ['RETR','RETRACTOR','SB RETR','PRETENSIONER','PRETENS','PRET','HEIGHT ADJUSTER','BELT GUIDE','STOPPER','DAMPENER','WEBBING','WEB ASSY'] },
-      // SEATBELTS (generic belt — lower priority than RETRACTORS/BUCKLES)
-      { component: 'RETRACTORS', subcategory: 'Seatbelt Assembly',
-        tokens: ['SEATBELT','SEAT BELT','LAP BELT','SHOULDER BELT','BELT ASSY'] },
-      // INFLATORS — generic airbag tokens (lower priority than MGG)
-      { component: 'INFLATORS', subcategory: 'Airbag Inflator',
-        tokens: ['INFL','INFLATOR','DAB','PAB','SAB','CAB','KAB','AB MODULE','AIRBAG MODULE','AIR BAG MODULE','CUSHION','AB ASSY','AIRBAG ASSY'] },
-      // Broad AB/airbag — lowest airbag priority
-      { component: 'INFLATORS', subcategory: 'Airbag',
-        tokens: ['AB ','AIRBAG','AIR BAG','BAG '] },
-      // Generic BELT/SB (lowest seatbelt priority)
-      { component: 'RETRACTORS', subcategory: 'Seatbelt',
-        tokens: ['SB ','BELT '] },
-    ];
-
-    for (var ri = 0; ri < TOKEN_RULES.length; ri++) {
-      var rule = TOKEN_RULES[ri];
-      var matched = [];
-      for (var ti = 0; ti < rule.tokens.length; ti++) {
-        var tok = rule.tokens[ti];
-        if (txt.indexOf(tok) >= 0) { matched.push(tok); }
-      }
-      if (matched.length > 0) {
-        // Confidence: 1 strong specific token = 88, 2+ = 92, generic single = 72
-        var conf = matched.length >= 2 ? 92 : (ri <= 2 ? 88 : 72);
-        return {
-          component: rule.component,
-          subcategory: rule.subcategory,
-          confidence: conf,
-          reason: 'Token rule [' + rule.component + ']: ' + matched.join(', '),
-          matchedTokens: matched
-        };
-      }
-    }
-
-    // No match
-    return { component: '', subcategory: '', confidence: 0, reason: 'no match', matchedTokens: [] };
-  }
-  // ── End classifyPartFromText ──────────────────────────────────────────────
-
 
   function optionCounts(normalizer){
   var map = {};
@@ -1136,16 +1027,11 @@ const plantOptions = PLANT_REGISTRY.filter(function(p){ return !p.closed && !p.i
   // Product Category dropdown driven from Reference Data → Product Category Aliases.
   // Use the canonical 'Component Family' (col index 2), de-duplicated.
   const catCounts = {};
-  var _UNCLASSIFIED_VALS = ['', 'unassigned', 'n/a', 'na', 'nan', 'none', 'unclassified'];
-  function normComponent(p){
-    var s = String(p.component || '').trim();
-    return (_UNCLASSIFIED_VALS.indexOf(s.toLowerCase()) >= 0) ? 'Unclassified' : s;
-  }
-  parts.forEach(function(p){ var k = normComponent(p); catCounts[k] = (catCounts[k] || 0) + 1; });
+  parts.forEach(function(p){ var k = normCategory(p); catCounts[k] = (catCounts[k] || 0) + 1; });
   const _seenCat = {};
   const _refCatRows = (refData['Product Category Aliases'] && refData['Product Category Aliases'].rows.length > 0) ? refData['Product Category Aliases'].rows : [];
 const categoryOptions = _refCatRows.length > 0
-  ? _refCatRows.map(function(r){ return r[2]; }).filter(function(fam){ var fl = (fam||'').toLowerCase(); if (fl === 'unassigned' || fl === 'nan' || fl === 'n/a' || fl === 'na') return false; if (_seenCat[fam]) return false; _seenCat[fam] = true; return true; }).map(function(fam){ return { key: fam, count: catCounts[fam] || 0 }; })
+  ? _refCatRows.map(function(r){ return r[2]; }).filter(function(fam){ if (_seenCat[fam]) return false; _seenCat[fam] = true; return true; }).map(function(fam){ return { key: fam, count: catCounts[fam] || 0 }; })
   : Array.from(new Set(parts.map(function(p){ return p.component; }).concat(parts.map(function(p){ return p.type; })))).filter(Boolean).sort().map(function(fam){ return { key: fam, count: parts.filter(function(p){ return p.component === fam || p.type === fam; }).length }; });
 if (catCounts['Unclassified']) categoryOptions.push({ key: 'Unclassified', count: catCounts['Unclassified'] });
 
@@ -1870,7 +1756,7 @@ function SignIn() {
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     // Computed parts helpers
-    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap, classifyPartFromText,
+    resolvePart, isArchived, servicePhase, extractYearFromEop, dqFlag, autoMap,
     normOem, normPlant, normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR,
     familySiblings, rateBandFor, evalRateBand,
     // Filters

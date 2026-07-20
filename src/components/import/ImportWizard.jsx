@@ -29,7 +29,7 @@ function ImportWizard() {
     partDecisions, setPartDecisions, archiveDecisions, setArchiveDecisions,
     manualArchiveIds, setManualArchiveIds, priceDecisions, setPriceDecisions,
     resolvePart, isArchived, servicePhase, dqFlag, autoMap, normOem, normPlant,
-    normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR, familySiblings, classifyPartFromText,
+    normCategory, getRefRows, SAFE_DEFAULTS, CURRENT_YEAR, familySiblings,
     rateBandFor, evalRateBand, filter, setFilter, oemFilter, setOemFilter,
     plantFilter, setPlantFilter, categoryFilter, setCategoryFilter,
     sortKey, setSortKey, sortDir, setSortDir, selOEMs, setSelOEMs,
@@ -389,22 +389,10 @@ function ImportWizard() {
                 }  
               }
             }
-            // Phase 1D: classifyPartFromText — replaces sparse alias-only scanner
-            var _needsClf = !mapped.component
-              || ['unassigned','n/a','nan','none','unclassified'].indexOf(String(mapped.component).toLowerCase().trim()) >= 0;
-            if (_needsClf && typeof classifyPartFromText === 'function') {
-              var _clf = classifyPartFromText(mapped, refData);
-              if (_clf && _clf.component) {
-                mapped.component = _clf.component;
-                mapped.subcategory = mapped.subcategory || _clf.subcategory;
-                mapped.classifyReason = _clf.reason;
-                mapped.classifyConfidence = _clf.confidence;
-                mapped.needsClassification = false;
-              } else {
-                // Genuinely unclassifiable — leave blank, flag for review
-                mapped.component = '';
-                mapped.needsClassification = true;
-              }
+            // If still unclassified → flag for Classification Manager review
+            if (!mapped.component) {
+            mapped.component = 'UNASSIGNED';
+            mapped.needsClassification = true;
             }
             // ──────────────────────────────────────────────────────────────
             mapped.id = 'IMP-' + Date.now() + '-' + newCnt;
@@ -414,7 +402,7 @@ function ImportWizard() {
             var SAFE_DEFAULTS = {
               oem: '', plant: '', customerPart: '', jss: '', altJss: '',
               desc: '', active: mapped.status || 'ACTIVE', type: '',
-              component: mapped.component || '', subcategory: '', program: '',
+              component: mapped.component || 'UNASSIGNED', subcategory: '', program: '',
               price: '', cost: '', demand: 0, backlog: 0,
               serviceSop: '', serviceEop: '', serialSop: '', serialEop: '',
               category: '', productCategory: '', recommendation: '',
