@@ -1,8 +1,8 @@
 // components/archive/ArchiveExportModal.jsx
+import * as XLSX from 'xlsx';
 // Modal for exporting archive records to Excel.
 
 import React from 'react';
-import * as XLSX from 'xlsx';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
@@ -54,15 +54,16 @@ function ArchiveExportModal(props) {
 
   function downloadArchiveExcel() {
     if (rows.length === 0) return;
-    var sheetRows = [EXP_COLS.map(function(c){ return c.header; })].concat(
-      rows.map(function(r){
-        return EXP_COLS.map(function(c){
-          var v = r[c.key];
-          return (v === undefined || v === null) ? '' : v;
-        });
-      })
-    );
-    var ws = XLSX.utils.aoa_to_sheet(sheetRows);
+    var headers = EXP_COLS.map(function(c){ return c.header; });
+    var data = rows.map(function(r){
+      return EXP_COLS.map(function(c){
+        var v = r[c.key];
+        return (v === undefined || v === null) ? '' : v;
+      });
+    });
+    var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
+    ws['!freeze'] = { ySplit: 1 };
+    ws['!cols'] = EXP_COLS.map(function(c, i){ return { wch: i === 3 ? 36 : 18 }; });
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Archive Candidates');
     XLSX.writeFile(wb, 'archive-' + exportView + '-' + new Date().getFullYear() + '.xlsx');

@@ -205,12 +205,7 @@ function handleFileChosen(e){
   else reader.readAsText(file);
 }
 
-async function handleExport() {
-  if (typeof ExcelJS === 'undefined') {
-    alert('ExcelJS library not loaded. Add the exceljs CDN script tag.');
-    return;
-  }
-
+function handleExport() {
   // Map: header label  ->  actual parts[] key
   const COLS = [
     { header: 'OEM',                      key: 'oem' },
@@ -225,92 +220,32 @@ async function handleExport() {
     { header: 'Ongoing Demand',           key: 'demand' },
     { header: 'Current Backlog',          key: 'backlog' },
     { header: 'Service Eop',              key: 'serviceEop' },
-    { header: 'Associated Car Program',   key: 'carProgram' }, // not in data yet -> blank
+    { header: 'Associated Car Program',   key: 'carProgram' },
     { header: 'AI Recommendation',        key: 'recommendation' },
     { header: 'Current Price',            key: 'price' },
-    { header: 'Expected Price',           key: 'expectedPrice' }, // not in data yet -> blank
-    { header: 'All Time Buy',             key: 'allTimeBuy' },    // not in data yet -> blank
+    { header: 'Expected Price',           key: 'expectedPrice' },
+    { header: 'All Time Buy',             key: 'allTimeBuy' },
   ];
 
-  const FONT_NAME = 'Aptos Narrow';
-  const BLUE   = 'FFCAEDFB';
-  const ORANGE = 'FFF1A983';
-  const STATUS = { ACTIVE: 'FF00B050', INACTIVE: 'FFFF0000', UNKNOWN: 'FF7030A0' };
-  const JSS_COL = 3; // column C
+  const headers = COLS.map(c => c.header);
+  const dataRows = parts.map(p => COLS.map(c => {
+    const v = p[c.key];
+    return (v === undefined || v === null) ? '' : v;
+  }));
 
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Master Terminal');
-
-  // ---- Column widths: A-E=25, F=35, G-H=20, I-N=25, O-Q=16 ----
-  ws.columns = COLS.map((c, i) => {
-    let w = 25;
-    if (i === 5) w = 35;            // F
-    else if (i === 6 || i === 7) w = 20; // G-H
-    else if (i >= 8 && i <= 13) w = 25;  // I-N
-    else if (i >= 14) w = 16;            // O-Q
-    return { width: w };
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  ws['!freeze'] = { xSplit: 3, ySplit: 1 };
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: COLS.length - 1 } }) };
+  ws['!cols'] = COLS.map((c, i) => {
+    if (i === 5) return { wch: 35 };
+    if (i === 6 || i === 7) return { wch: 20 };
+    if (i >= 14) return { wch: 16 };
+    return { wch: 25 };
   });
 
-  // ---- Header row ----
-  const headerRow = ws.addRow(COLS.map(c => c.header));
-  headerRow.eachCell((cell) => {
-    cell.font = { name: FONT_NAME, size: 11, bold: true, underline: true, color: { argb: 'FF000000' } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLUE } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-  });
-
-  // ---- Data rows ----
-  parts.forEach((p) => {
-    const row = ws.addRow(COLS.map(c => {
-      const v = p[c.key];
-      return (v === undefined || v === null) ? '' : v;
-    }));
-
-    row.eachCell((cell, colNumber) => {
-      cell.font = { name: FONT_NAME, size: 11 };
-      cell.alignment = {horizontal: 'center', vertical: 'middle'};
-
-      // Orange fill on JSS Part No. column
-      if (colNumber === JSS_COL) {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } };
-      }
-
-      // Color-coded Status text (column I = 9)
-      if (colNumber === 9) {
-        const k = String(cell.value || '').trim().toUpperCase();
-        if (STATUS[k]) cell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: STATUS[k] } };
-      }
-    });
-  });
-
-  // ---- Thick OUTSIDE border around the whole JSS column block (C1:C{last}) ----
-  const lastRow = ws.rowCount;
-  for (let r = 1; r <= lastRow; r++) {
-    const cell = ws.getCell(r, JSS_COL);
-    const b = {
-      left:  { style: 'thick', color: { argb: 'FF000000' } },
-      right: { style: 'thick', color: { argb: 'FF000000' } },
-    };
-    if (r === 1)        b.top    = { style: 'thick', color: { argb: 'FF000000' } };
-    if (r === lastRow)  b.bottom = { style: 'thick', color: { argb: 'FF000000' } };
-    cell.border = b;
-  }
-
-  // ---- Freeze header row + first 3 columns (THIS is what fixes your scroll problem) ----
-  ws.views = [{ state: 'frozen', xSplit: 3, ySplit: 1, topLeftCell: 'D2' }];
-
-  // ---- AutoFilter dropdowns across the header ----
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLS.length } };
-
-  // ---- Write file ----
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `service-database-export-${new Date().getFullYear()}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Master Terminal');
+  XLSX.writeFile(wb, `service-database-export-${new Date().getFullYear()}.xlsx`);
 }
 
   const joysonLogoUrl = 'https://cdn.abacus.ai/images/a963436a-16b6-4c99-8408-a4501e8b703f.png';
@@ -1271,43 +1206,22 @@ function SimplePage(props) {
       close();
     }
 
-    async function downloadArchiveExcel() {
+    function downloadArchiveExcel() {
       if (rows.length === 0) return;
-      console.log('ExcelJS is:', typeof ExcelJS);
-      if (typeof ExcelJS === 'undefined') { alert('ExcelJS not loaded.'); return; }
-      var wb = new ExcelJS.Workbook();
-      var ws = wb.addWorksheet('Archive Candidates');
-      ws.columns = EXP_COLS.map(function(c, i){ return { width: (i === 3 ? 36 : 18) }; });
-
-      var hdr = ws.addRow(EXP_COLS.map(function(c){ return c.header; }));
-      hdr.eachCell(function(cell){
-        cell.font = { name: 'Aptos Narrow', size: 11, bold: true, underline: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCAEDFB' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      });
-
-      rows.forEach(function(r){
-        var row = ws.addRow(EXP_COLS.map(function(c){
+      var headers = EXP_COLS.map(function(c){ return c.header; });
+      var data = rows.map(function(r){
+        return EXP_COLS.map(function(c){
           var v = r[c.key];
           return (v === undefined || v === null) ? '' : v;
-        }));
-        row.eachCell(function(cell){
-          cell.font = { name: 'Aptos Narrow', size: 11 };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
       });
-
-      ws.views = [{ state: 'frozen', ySplit: 1 }];
-      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: EXP_COLS.length } };
-
-      var buf = await wb.xlsx.writeBuffer();
-      var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'archive-' + exportView + '-' + new Date().getFullYear() + '.xlsx';
-      a.click();
-      URL.revokeObjectURL(url);
+      var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
+      ws['!freeze'] = { ySplit: 1 };
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: EXP_COLS.length - 1 } }) };
+      ws['!cols'] = EXP_COLS.map(function(c, i){ return { wch: (i === 3 ? 36 : 18) }; });
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Archive Candidates');
+      XLSX.writeFile(wb, 'archive-' + exportView + '-' + new Date().getFullYear() + '.xlsx');
       close();
     }
     var counts = {

@@ -1,8 +1,8 @@
 // components/service-life/ServiceLifePhase.jsx
+import * as XLSX from 'xlsx';
 // Service Life Phase page — phase grid, filters, and phase pill badges.
 
 import React from 'react';
-import * as XLSX from 'xlsx';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
@@ -91,18 +91,36 @@ function PhasePill(props){ var m = phaseMeta[props.phase]; return <span classNam
     });
 
     return <div className="space-y-5"><div className="flex items-start justify-between gap-4"><div><h1 className="text-2xl font-bold text-gray-900">Service Life Phase</h1><p className="text-gray-500">15-year service-life window for sales managers, split into four phases by years remaining until service end (EOP). Phase 4 and Unknown Age are the biggest cleanup levers.</p></div><div className="flex items-center gap-2"><select value={oemPhaseFilter} onChange={function(e){ setOemPhaseFilter(e.target.value); }} className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"><option value="All">All OEMs</option>{Array.from(new Set(parts.map(function(p){ return p.oem; }).filter(Boolean))).sort().map(function(o){ return <option key={o} value={o}>{o}</option>; })}</select><button onClick={function(){ setYearSettingsOpen(true); }} title={'Phases are computed from the reference year. ' + (yearIsPinned ? 'Currently PINNED to ' + CURRENT_YEAR + '.' : 'Auto-rolling with the live clock.') + ' Click to change.'} className={'rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap ' + (yearIsPinned ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200')}>📅 as of {CURRENT_YEAR}{yearIsPinned ? ' · pinned' : ''}</button><button onClick={function(){
-  var tot=phased.length;
-  var ws1Rows=[['Phase','Part Count','% of Total','Description']];
-  order.forEach(function(k){ var m=phaseMeta[k]; var cnt=phased.filter(function(p){return p.phase===k;}).length; ws1Rows.push([m.label,cnt,tot>0?(cnt/tot*100).toFixed(1)+'%':'0%',m.note]); });
-  var ws2Rows=[['OEM','0–5 Yrs','5–10 Yrs','10–15 Yrs','15+ Yrs','Unknown Age','Total','Cleanup %']];
-  oemPhase.forEach(function(o){ ws2Rows.push([o.oem,o.p1,o.p2,o.p3,o.p4,o.unknown,o.total,o.cleanupPct+'%']); });
-  var ws3Rows=[['Phase','Years Left','OEM','JSS Part','Description','Service EOP','Status']];
-  phased.forEach(function(p){ var m=phaseMeta[p.phase]; ws3Rows.push([m.label,p.yearsLeft===null?'Unknown':p.yearsLeft<=0?'Overdue':p.yearsLeft,p.oem,p.jss,p.desc,p.serviceEop,p.active]); });
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws1Rows),'Phase Summary');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws2Rows),'Per-OEM Breakdown');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws3Rows),'Part Detail');
-  XLSX.writeFile(wb,'service-life-phase-report-'+CURRENT_YEAR+'.xlsx');
+  var wb = XLSX.utils.book_new();
+  var tot = phased.length;
+  var ws1Data = [['Phase','Part Count','% of Total','Description']];
+  order.forEach(function(k){
+    var m = phaseMeta[k];
+    var cnt = phased.filter(function(p){ return p.phase === k; }).length;
+    ws1Data.push([m.label, cnt, tot > 0 ? (cnt/tot*100).toFixed(1)+'%' : '0%', m.note]);
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+  ws1['!freeze'] = { ySplit: 1 };
+  ws1['!cols'] = [{wch:20},{wch:14},{wch:12},{wch:34}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Phase Summary');
+  var ws2Data = [['OEM','0–5 Yrs','5–10 Yrs','10–15 Yrs','15+ Yrs','Unknown Age','Total','Cleanup %']];
+  oemPhase.forEach(function(o){
+    ws2Data.push([o.oem, o.p1, o.p2, o.p3, o.p4, o.unknown, o.total, o.cleanupPct+'%']);
+  });
+  var ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  ws2['!freeze'] = { ySplit: 1 };
+  ws2['!cols'] = [{wch:18},{wch:12},{wch:12},{wch:12},{wch:12},{wch:14},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Per-OEM Breakdown');
+  var ws3Data = [['Phase','Years Left','OEM','JSS Part','Description','Service EOP','Status']];
+  phased.forEach(function(p){
+    var m = phaseMeta[p.phase];
+    ws3Data.push([m.label, p.yearsLeft === null ? 'Unknown' : p.yearsLeft <= 0 ? 'Overdue' : p.yearsLeft, p.oem, p.jss, p.desc, p.serviceEop, p.active]);
+  });
+  var ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+  ws3['!freeze'] = { ySplit: 1 };
+  ws3['!cols'] = [{wch:16},{wch:12},{wch:16},{wch:18},{wch:40},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Part Detail');
+  XLSX.writeFile(wb, 'service-life-phase-report-' + CURRENT_YEAR + '.xlsx');
 }} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium">Export Phase Report</button></div></div>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4"><StatCard title="Total Parts Phased" value={totalPhased.toLocaleString()} subtitle="Across the 15-year window" /><StatCard title="Phase 4 (15+ / Overdue)" value={scaleCounts['PHASE 4'].toLocaleString()} subtitle="Prime archive candidates" tone="red" /><StatCard title="Unknown Age" value={scaleCounts['UNKNOWN AGE'].toLocaleString()} subtitle="Missing EOP — needs data" /></div>
@@ -185,84 +203,55 @@ function PhasePill(props){ var m = phaseMeta[props.phase]; return <span classNam
 
       return <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="flex items-start justify-between gap-4 mb-1"><div><h2 className="font-bold text-gray-900">Per-OEM Phase Breakdown</h2><p className="text-sm text-gray-500">Track each customer's service-life mix and cleanup progress. Click any OEM row to filter the detail table below; click again to clear.</p></div><div className="hidden md:flex items-center gap-3 text-xs">{segMeta.map(function(s){ return <div key={s.key} className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: s.color }}></span><span className="text-gray-600">{phaseMeta[s.tone].label}</span></div>; })}</div></div>
 
-      <div className="mt-4 rounded-xl border" style={{background:'#0d1117',borderColor:'#21262d'}}>
+      <div className="mt-4 rounded-2xl overflow-hidden" style={{background:'#0d1117',border:'1px solid #21262d'}}>
         <style>{".rbdot{opacity:0;transition:opacity 0.15s}.rbline{opacity:0;transition:opacity 0.15s}.rbzone:hover .rbdot{opacity:1}.rbzone:hover .rbline{opacity:1}"}</style>
-        {/* ── Header row ── */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 20px 12px',borderBottom:'1px solid #21262d'}}>
-          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#8b949e'}}>Cleanup Trend</span>
-            <span style={{fontSize:'11px',fontWeight:500,padding:'1px 7px',borderRadius:'999px',background:'#161b22',border:'1px solid #30363d',color:'#8b949e'}}>{_snaps.length} snapshot{_snaps.length !== 1 ? 's' : ''}</span>
+        <div style={{padding:'20px 24px 12px'}}>
+          <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',color:'#8b949e',marginBottom:'6px'}}>
+            Cleanup Trend · {_snaps.length} Snapshot{_snaps.length !== 1 ? 's' : ''}
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
-            {_pctChange !== null && (
-              <span style={{fontSize:'11px',fontWeight:700,padding:'2px 8px',borderRadius:'999px',background:Number(_pctChange)>=0?'rgba(63,185,80,0.12)':'rgba(248,81,73,0.12)',color:Number(_pctChange)>=0?'#3fb950':'#f85149',border:'1px solid',borderColor:Number(_pctChange)>=0?'rgba(63,185,80,0.3)':'rgba(248,81,73,0.3)'}}>
-                {Number(_pctChange)>=0?'↑':'↓'} {Math.abs(_pctChange)}% vs first
-              </span>
-            )}
-            <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'999px',background:'#161b22',border:'1px solid #30363d',color:'#8b949e'}}>
-              {_hasHistory ? 'Live' : 'Pending'}
-            </span>
+          <div style={{display:'flex',alignItems:'flex-end',gap:'10px'}}>
+            {_hasHistory
+              ? <div style={{fontSize:'28px',fontWeight:700,color:'#3fb950',letterSpacing:'-0.03em',lineHeight:1}}>{totalCleared.toLocaleString()} <span style={{fontSize:'15px',fontWeight:500,color:'#8b949e'}}>parts cleared</span></div>
+              : <div style={{fontSize:'22px',fontWeight:600,color:'#8b949e'}}>Building history…</div>
+            }
+            {_pctChange !== null && <div style={{marginBottom:'2px',fontSize:'12px',fontWeight:700,padding:'2px 8px',borderRadius:'6px',background:Number(_pctChange)>=0?'rgba(63,185,80,0.15)':'rgba(248,81,73,0.15)',color:Number(_pctChange)>=0?'#3fb950':'#f85149'}}>
+              {Number(_pctChange)>=0?'↑':'↓'} {Math.abs(_pctChange)}%
+            </div>}
+          </div>
+          <div style={{fontSize:'12px',color:'#8b949e',marginTop:'4px'}}>
+            {_hasHistory
+              ? <span>Tracked across <strong style={{color:'#c9d1d9'}}>{n}</strong> import cycles · auto-updates each visit</span>
+              : <span>First point recorded {_snaps[0]?_snaps[0].cycle:_todayCycle} · returns each visit or import</span>
+            }
           </div>
         </div>
-        {/* ── KPI chips row ── */}
-        <div style={{display:'flex',alignItems:'stretch',gap:'0',borderBottom:'1px solid #21262d'}}>
-          {[
-            {label:'Parts Cleared',value:_hasHistory?totalCleared.toLocaleString():'—',sub:'cumulative',accent:'#3fb950'},
-            {label:'Import Cycles',value:n>0?String(n):'0',sub:'tracked',accent:'#58a6ff'},
-            {label:'Latest Cycle',value:trend.length>0?trend[trend.length-1].cycle:'—',sub:'snapshot',accent:'#e3b341'},
-            {label:'Trend Direction',value:_pctChange===null?'—':Number(_pctChange)>=0?'Improving':'Declining',sub:_pctChange===null?'no history':Math.abs(_pctChange)+'% shift',accent:_pctChange===null?'#8b949e':Number(_pctChange)>=0?'#3fb950':'#f85149'},
-          ].map(function(chip,ci){
-            return <div key={ci} style={{flex:1,padding:'10px 14px',borderRight:ci<3?'1px solid #21262d':'none'}}>
-              <div style={{fontSize:'10px',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',color:'#8b949e',marginBottom:'3px'}}>{chip.label}</div>
-              <div style={{fontSize:'18px',fontWeight:700,color:chip.accent,lineHeight:1,letterSpacing:'-0.02em'}}>{chip.value}</div>
-              <div style={{fontSize:'10px',color:'#6e7681',marginTop:'2px'}}>{chip.sub}</div>
-            </div>;
-          })}
+        <div style={{position:'relative',height:'120px',padding:'0'}}>
+          <svg viewBox={'0 0 ' + tW + ' ' + tH} width="100%" height="100%" preserveAspectRatio="none" style={{display:'block'}}>
+            <defs>
+              <linearGradient id="rbGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3fb950" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#3fb950" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            {[0.25,0.5,0.75].map(function(f,gi){ var gy=(padY+f*(tH-padY*2)).toFixed(1); return <line key={gi} x1="0" y1={gy} x2={tW} y2={gy} stroke="#21262d" strokeWidth="0.8" />; })}
+            {_hasHistory && <path d={areaPath} fill="url(#rbGrad)" />}
+            {_hasHistory && <path d={linePath} fill="none" stroke="#3fb950" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+            {pts.map(function(p, i){
+              var zoneX = i===0 ? 0 : (pts[i-1].x+p.x)/2;
+              var nextX = i===pts.length-1 ? tW : (p.x+pts[i+1].x)/2;
+              var zoneW = nextX - zoneX;
+              return <g key={i} className="rbzone" style={{cursor:'crosshair'}}>
+                <rect x={zoneX.toFixed(1)} y="0" width={zoneW.toFixed(1)} height={tH} fill="transparent" />
+                <line className="rbline" x1={p.x.toFixed(1)} y1="0" x2={p.x.toFixed(1)} y2={tH} stroke="#8b949e" strokeWidth="1" strokeDasharray="3 3" />
+                <circle className="rbdot" cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="4.5" fill="#3fb950" stroke="#0d1117" strokeWidth="2.5" />
+                <title>{p.t.cycle + ': ' + p.t.cleared + ' cleared'}</title>
+              </g>;
+            })}
+          </svg>
         </div>
-        {/* ── Chart area ── */}
-        <div style={{position:'relative',height:'110px',padding:'0'}}>
-          {_hasHistory ? (
-            <svg viewBox={'0 0 ' + tW + ' ' + tH} width="100%" height="100%" preserveAspectRatio="none" style={{display:'block'}}>
-              <defs>
-                <linearGradient id="rbGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3fb950" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#3fb950" stopOpacity="0.02" />
-                </linearGradient>
-              </defs>
-              {[0.25,0.5,0.75].map(function(f,gi){ var gy=(padY+f*(tH-padY*2)).toFixed(1); return <line key={gi} x1="0" y1={gy} x2={tW} y2={gy} stroke="#161b22" strokeWidth="1" />; })}
-              <path d={areaPath} fill="url(#rbGrad)" />
-              <path d={linePath} fill="none" stroke="#3fb950" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-              {pts.map(function(p, i){
-                var zoneX = i===0 ? 0 : (pts[i-1].x+p.x)/2;
-                var nextX = i===pts.length-1 ? tW : (p.x+pts[i+1].x)/2;
-                var zoneW = nextX - zoneX;
-                return <g key={i} className="rbzone" style={{cursor:'crosshair'}}>
-                  <rect x={zoneX.toFixed(1)} y="0" width={zoneW.toFixed(1)} height={tH} fill="transparent" />
-                  <line className="rbline" x1={p.x.toFixed(1)} y1="0" x2={p.x.toFixed(1)} y2={tH} stroke="#30363d" strokeWidth="1" strokeDasharray="3 3" />
-                  <circle className="rbdot" cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="4" fill="#3fb950" stroke="#0d1117" strokeWidth="2" />
-                  <title>{p.t.cycle + ': ' + p.t.cleared + ' cleared'}</title>
-                </g>;
-              })}
-            </svg>
-          ) : (
-            <div style={{height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',padding:'0 24px'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{opacity:0.3}}>
-                <polyline points="2,18 8,11 13,15 22,6" stroke="#3fb950" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="22" cy="6" r="2" fill="#3fb950" opacity="0.5"/>
-              </svg>
-              <div style={{fontSize:'12px',color:'#6e7681',textAlign:'center'}}>
-                History builds automatically after each import cycle.<br/>
-                <span style={{color:'#8b949e'}}>First point: {_snaps[0]?_snaps[0].cycle:_todayCycle}</span>
-              </div>
-            </div>
-          )}
+        <div style={{display:'flex',justifyContent:'space-between',padding:'0 24px 16px',marginTop:'2px'}}>
+          {trend.map(function(t,i){ return <span key={i} style={{fontSize:'11px',color:'#8b949e'}}>{t.cycle}</span>; })}
         </div>
-        {/* ── X-axis cycle labels ── */}
-        {trend.length > 0 && (
-          <div style={{display:'flex',justifyContent:'space-between',padding:'4px 20px 12px',borderTop:'1px solid #21262d'}}>
-            {trend.map(function(t,i){ return <span key={i} style={{fontSize:'10px',color:'#6e7681',letterSpacing:'0.02em'}}>{t.cycle}</span>; })}
-          </div>
-        )}
       </div>
 
       {oemPhaseFilter !== 'All' && <div className="mt-3 flex items-center gap-2 text-sm"><span className="bg-blue-100 text-blue-800 rounded-full px-3 py-1 font-medium">Filtering detail table by: {oemPhaseFilter}</span><button onClick={function(){ setOemPhaseFilter('All'); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium">Clear filter ×</button></div>}
