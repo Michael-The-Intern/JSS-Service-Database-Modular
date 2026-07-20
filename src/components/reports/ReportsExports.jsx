@@ -6,6 +6,7 @@ import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
 import { StatCard } from '../shared/StatCard.jsx';
+import * as XLSX from 'xlsx';
 
 
 function ReportsExports() {
@@ -175,33 +176,27 @@ function ExportTerminal() {
     }
     var groups = buildGroups(displayRows);
 
-    async function doExcelExport(){
-      if (typeof ExcelJS === 'undefined') { alert('ExcelJS not loaded.'); return; }
-      var wb = new ExcelJS.Workbook();
+    function doExcelExport(){
+      var headers = activeCols.map(function(c){ return c.header; });
       if (groupBy !== 'none') {
+        var wb = XLSX.utils.book_new();
         groups.forEach(function(g){
-          var ws = wb.addWorksheet(g.label || 'Export');
-          ws.columns = activeCols.map(function(c){ return { header: c.header, key: c.key, width: c.key === 'desc' || c.key === 'reason' ? 40 : c.key === 'recommendation' ? 30 : 18 }; });
-          g.rows.forEach(function(r){ var row = {}; activeCols.forEach(function(c){ row[c.key] = (r[c.key] !== undefined && r[c.key] !== null) ? r[c.key] : ''; }); ws.addRow(row); });
-          ws.getRow(1).eachCell(function(cell){ cell.font = { bold: true, name: 'Aptos Narrow', size: 11, color: { argb: 'FFFFFFFF' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } }; cell.alignment = { horizontal: 'center', vertical: 'middle' }; });
-          ws.eachRow(function(row, rn){ if (rn === 1) return; row.eachCell(function(cell){ cell.font = { name: 'Aptos Narrow', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'middle' }; }); });
-          if (selCols.indexOf('priority') >= 0) { ws.eachRow(function(row, rn){ if (rn === 1) return; var pCell = row.getCell('priority'); var col = PRIORITY_COLORS[pCell.value]; if (col) { pCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: col } }; pCell.font = { name: 'Aptos Narrow', size: 11, color: { argb: 'FFFFFFFF' } }; } }); }
-          ws.views = [{ state: 'frozen', ySplit: 1 }];
-          ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: activeCols.length } };
+          var rows = [headers].concat(g.rows.map(function(r){
+            return activeCols.map(function(c){ return (r[c.key] !== undefined && r[c.key] !== null) ? r[c.key] : ''; });
+          }));
+          var ws = XLSX.utils.aoa_to_sheet(rows);
+          XLSX.utils.book_append_sheet(wb, ws, (g.label || 'Export').toString().slice(0, 31));
         });
+        XLSX.writeFile(wb, exportName + '.xlsx');
       } else {
-        var ws = wb.addWorksheet('Export');
-        ws.columns = activeCols.map(function(c){ return { header: c.header, key: c.key, width: c.key === 'desc' || c.key === 'reason' ? 40 : c.key === 'recommendation' ? 30 : 18 }; });
-        displayRows.forEach(function(r){ var row = {}; activeCols.forEach(function(c){ row[c.key] = (r[c.key] !== undefined && r[c.key] !== null) ? r[c.key] : ''; }); ws.addRow(row); });
-        ws.getRow(1).eachCell(function(cell){ cell.font = { bold: true, name: 'Aptos Narrow', size: 11, color: { argb: 'FFFFFFFF' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } }; cell.alignment = { horizontal: 'center', vertical: 'middle' }; });
-        ws.eachRow(function(row, rn){ if (rn === 1) return; row.eachCell(function(cell){ cell.font = { name: 'Aptos Narrow', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'middle' }; }); });
-        if (selCols.indexOf('priority') >= 0) { ws.eachRow(function(row, rn){ if (rn === 1) return; var pCell = row.getCell('priority'); var col = PRIORITY_COLORS[pCell.value]; if (col) { pCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: col } }; pCell.font = { name: 'Aptos Narrow', size: 11, color: { argb: 'FFFFFFFF' } }; } }); }
-        ws.views = [{ state: 'frozen', ySplit: 1 }];
-        ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: activeCols.length } };
+        var rows = [headers].concat(displayRows.map(function(r){
+          return activeCols.map(function(c){ return (r[c.key] !== undefined && r[c.key] !== null) ? r[c.key] : ''; });
+        }));
+        var ws = XLSX.utils.aoa_to_sheet(rows);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Export');
+        XLSX.writeFile(wb, exportName + '.xlsx');
       }
-      var buf = await wb.xlsx.writeBuffer();
-      var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = exportName + '.xlsx'; a.click(); URL.revokeObjectURL(url);
     }
 
     function doCsvExport(){

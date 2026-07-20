@@ -87,7 +87,17 @@ function ImportWizard() {
 
     // STEP 0 — choose a file
     if (importStep === 0 || !importFile) {
-      var recentImps = (rawAudit||[]).filter(function(a){ return a.action === 'IMPORT COMMIT'; }).slice(0,5);
+      var _impsRaw = (rawAudit||[]).filter(function(a){ return a.action === 'IMPORT COMMIT'; });
+      var _seenImpKeys = {};
+      var _impsDeduped = _impsRaw.filter(function(a){
+        var key = a.id
+          ? String(a.id)
+          : [a.fileName||a.name||'', a.action||'', a.newCount||a.new||'', a.updatedCount||a.updated||'', a.flaggedCount||a.flagged||'', a.date||a.timestamp||''].join('|');
+        if (_seenImpKeys[key]) return false;
+        _seenImpKeys[key] = true;
+        return true;
+      });
+      var recentImps = _impsDeduped.slice(0,5);
       return <div className="space-y-6">{header}{stepper}<div className="bg-white rounded-xl border border-gray-200 p-6"><div onClick={handleUploadClick} onDragOver={function(e){ e.preventDefault(); }} onDrop={function(e){ e.preventDefault(); if(e.dataTransfer.files && e.dataTransfer.files[0]){ handleFileChosen({ target: { files: e.dataTransfer.files } }); } }} className="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center bg-blue-50 cursor-pointer hover:bg-blue-100 hover:border-blue-400 transition-colors"><div className="text-3xl mb-2">📄</div><div className="font-bold text-gray-900">Drop an Excel / CSV file here</div><div className="text-sm text-gray-500">Drag and drop your file above, or click the drop zone to browse for a file.</div></div></div>{recentImps.length > 0 && <div className="mt-4"><div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Recent Imports</div><div className="space-y-2">{recentImps.map(function(a){ return <div key={a.id} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-2"><div><div className="text-sm font-medium text-gray-800">{a.target || 'Import'}</div><div className="text-xs text-gray-400">{a.detail || ''}</div></div><div className="text-xs text-gray-400 whitespace-nowrap ml-4">{a.ts ? new Date(a.ts).toLocaleDateString() : '—'} · {a.user || '—'}</div></div>; })}</div></div>}</div>;
     }
 

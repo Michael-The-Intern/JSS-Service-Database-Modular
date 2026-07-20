@@ -2,6 +2,7 @@
 // Modal for exporting archive records to Excel.
 
 import React from 'react';
+import * as XLSX from 'xlsx';
 import { AppContext } from '../../context/AppContext.jsx';
 
 import { _supa } from '../../lib/supabase.js';
@@ -51,43 +52,20 @@ function ArchiveExportModal(props) {
     close();
   }
 
-  async function downloadArchiveExcel() {
+  function downloadArchiveExcel() {
     if (rows.length === 0) return;
-    console.log('ExcelJS is:', typeof ExcelJS);
-    if (typeof ExcelJS === 'undefined') { alert('ExcelJS not loaded.'); return; }
-    var wb = new ExcelJS.Workbook();
-    var ws = wb.addWorksheet('Archive Candidates');
-    ws.columns = EXP_COLS.map(function(c, i){ return { width: (i === 3 ? 36 : 18) }; });
-
-    var hdr = ws.addRow(EXP_COLS.map(function(c){ return c.header; }));
-    hdr.eachCell(function(cell){
-      cell.font = { name: 'Aptos Narrow', size: 11, bold: true, underline: true };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCAEDFB' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-
-    rows.forEach(function(r){
-      var row = ws.addRow(EXP_COLS.map(function(c){
-        var v = r[c.key];
-        return (v === undefined || v === null) ? '' : v;
-      }));
-      row.eachCell(function(cell){
-        cell.font = { name: 'Aptos Narrow', size: 11 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      });
-    });
-
-    ws.views = [{ state: 'frozen', ySplit: 1 }];
-    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: EXP_COLS.length } };
-
-    var buf = await wb.xlsx.writeBuffer();
-    var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'archive-' + exportView + '-' + new Date().getFullYear() + '.xlsx';
-    a.click();
-    URL.revokeObjectURL(url);
+    var sheetRows = [EXP_COLS.map(function(c){ return c.header; })].concat(
+      rows.map(function(r){
+        return EXP_COLS.map(function(c){
+          var v = r[c.key];
+          return (v === undefined || v === null) ? '' : v;
+        });
+      })
+    );
+    var ws = XLSX.utils.aoa_to_sheet(sheetRows);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Archive Candidates');
+    XLSX.writeFile(wb, 'archive-' + exportView + '-' + new Date().getFullYear() + '.xlsx');
     close();
   }
   var counts = {
