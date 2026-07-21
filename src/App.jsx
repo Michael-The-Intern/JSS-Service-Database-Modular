@@ -668,7 +668,7 @@ const importTargets = importTargetGroups.flatMap(function(g){ return g.fields.ma
     if (h.indexOf('desc') >= 0) return { t: 'Description', c: 98 };
     if (h.indexOf('price') >= 0) return { t: 'Service Price', c: 95 };
     if (h.indexOf('cost') >= 0) return { t: 'Std Cost', c: 96 };
-    if (h.indexOf('req') >= 0 || h.indexOf('qty') >= 0) return { t: 'Demand (4wk)', c: 92 };
+    if (h.indexOf('req') >= 0 || h.indexOf('qty') >= 0) return { t: 'Demand', c: 92 };
     if (h.indexOf('backorder') >= 0 || h.indexOf('backlog') >= 0) return { t: 'Backlog', c: 90 };
     if ((h.indexOf('service') >= 0 && h.indexOf('sop') >= 0) || h.indexOf('service start') >= 0) return { t: 'Service SOP', c: 90 };
     if ((h.indexOf('service') >= 0 && h.indexOf('eop') >= 0) || h.indexOf('service end') >= 0) return { t: 'Service EOP', c: 90 };
