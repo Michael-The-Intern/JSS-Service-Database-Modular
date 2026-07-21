@@ -57,7 +57,7 @@ function DQBadge(props) {
 };
 
 var REPORT_COLUMNS = {
-  master:  ['priority','oem','plant','jss','customerPart','desc','active','dq','demand','backlog','recommendation'],
+  master:  ['priority','oem','plant','jss','customerPart','desc','active','dq','recommendation'],
   cleanup: ['oem','jss','customerPart','desc','active','archiveStatus','serviceEop','demand','backlog'],
   phase:   ['oem','jss','customerPart','desc','active','serviceEop','demand','priority'],
   slp:     ['oem','jss','customerPart','desc','active','serviceEop','demand','priority'],
